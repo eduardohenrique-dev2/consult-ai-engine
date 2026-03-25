@@ -4,13 +4,13 @@ import { Send, Sparkles, Database, Bot, User, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { baseConhecimento, queriesRM } from "@/data/mock-data";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-  sql?: string;
   timestamp: Date;
 }
 
@@ -21,32 +21,14 @@ const quickActions = [
   "Funcionários sem cálculo de folha",
 ];
 
-function simulateRAG(query: string): string {
-  const lowerQuery = query.toLowerCase();
-  const matched = baseConhecimento.filter(bc =>
-    bc.titulo.toLowerCase().includes(lowerQuery) ||
-    bc.conteudo.toLowerCase().includes(lowerQuery) ||
-    lowerQuery.includes(bc.titulo.toLowerCase().split(" ").slice(0, 2).join(" "))
-  );
+const queryShortcuts = [
+  { nome: "Funcionários ativos", prompt: "Gere a query para listar funcionários ativos" },
+  { nome: "Sem benefício", prompt: "Gere a query para encontrar funcionários sem benefício" },
+  { nome: "Divergência benefício", prompt: "Gere a query para divergência de benefícios" },
+  { nome: "Sem cálculo folha", prompt: "Gere a query para funcionários sem cálculo de folha" },
+];
 
-  if (matched.length > 0) {
-    const item = matched[0];
-    if (item.tipo === "SQL") {
-      return `**📋 Encontrado na Base de Conhecimento:**\n\n**${item.titulo}**\n\nA query SQL para essa consulta é:\n\n\`\`\`sql\n${item.conteudo}\n\`\`\`\n\n**Explicação:**\nEssa query consulta as tabelas do TOTVS RM para obter os dados solicitados. Certifique-se de que as tabelas estejam acessíveis e os índices otimizados para melhor performance.\n\n💡 *Resultado obtido da base de conhecimento interna (RAG)*`;
-    }
-    return `**📋 Encontrado na Base de Conhecimento:**\n\n**${item.titulo}**\n\n${item.conteudo}\n\n💡 *Resultado obtido da base de conhecimento interna (RAG)*`;
-  }
-
-  if (lowerQuery.includes("funcionário") && lowerQuery.includes("ativo")) {
-    return `Para listar funcionários ativos no TOTVS RM, utilize a query:\n\n\`\`\`sql\nSELECT F.CHAPA, F.NOME FROM PFUNC F WHERE F.SITUACAO = 'A'\n\`\`\`\n\n**Tabela PFUNC:** Armazena dados cadastrais dos funcionários.\n**Campo SITUACAO:** 'A' = Ativo, 'D' = Demitido, 'F' = Férias.\n\n🔍 *Consulta baseada em conhecimento interno do sistema RM*`;
-  }
-
-  if (lowerQuery.includes("s-1200") || lowerQuery.includes("esocial")) {
-    return `**Evento S-1200 - Remuneração do Trabalhador**\n\nO S-1200 é o evento do eSocial responsável por informar a remuneração de cada trabalhador.\n\n**Causas comuns de erro:**\n- CPF inválido no cadastro\n- Rubrica sem correspondência na tabela de naturezas\n- Período de apuração incorreto\n\n**Solução:**\nVerificar cadastro na PFUNC e tabela de rubricas PRUBRICAS:\n\n\`\`\`sql\nSELECT R.CODRUBRICA, R.DESCRICAO, R.NATUREZA\nFROM PRUBRICAS R\nWHERE R.NATUREZA IS NULL\n\`\`\`\n\n⚠️ *Se o problema persistir, verifique o layout do XML gerado*`;
-  }
-
-  return `Analisando sua pergunta sobre: "${query}"\n\n**Recomendações:**\n\n1. Verifique a documentação do TOTVS RM relacionada ao módulo em questão\n2. Consulte os chamados anteriores com problemas similares\n3. Execute queries de diagnóstico nas tabelas PFUNC, PFFINANC e PBENEFICIO\n\n\`\`\`sql\n-- Query de diagnóstico geral\nSELECT COUNT(*) as total,\n  SUM(CASE WHEN SITUACAO = 'A' THEN 1 ELSE 0 END) as ativos\nFROM PFUNC\n\`\`\`\n\n💡 *Para resultados mais precisos, forneça detalhes como módulo, mensagem de erro e cliente*`;
-}
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export default function ChatIA() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -54,24 +36,109 @@ export default function ChatIA() {
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   const sendMessage = async (text: string) => {
-    if (!text.trim()) return;
+    if (!text.trim() || isTyping) return;
     const userMsg: Message = { id: `m${Date.now()}`, role: "user", content: text, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      const response = simulateRAG(text);
-      const assistantMsg: Message = { id: `m${Date.now() + 1}`, role: "assistant", content: response, timestamp: new Date() };
-      setMessages(prev => [...prev, assistantMsg]);
-      setIsTyping(false);
-    }, 1200);
+    const allMessages = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }));
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: allMessages }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
+        toast({ title: "Erro", description: err.error || `Erro ${resp.status}`, variant: "destructive" });
+        setIsTyping(false);
+        return;
+      }
+
+      if (!resp.body) throw new Error("No response body");
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+      let assistantSoFar = "";
+      let streamDone = false;
+
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") { streamDone = true; break; }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantSoFar += content;
+              const currentContent = assistantSoFar;
+              setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last?.role === "assistant") {
+                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: currentContent } : m);
+                }
+                return [...prev, { id: `m${Date.now()}`, role: "assistant", content: currentContent, timestamp: new Date() }];
+              });
+            }
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+
+      // Final flush
+      if (textBuffer.trim()) {
+        for (let raw of textBuffer.split("\n")) {
+          if (!raw) continue;
+          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+          if (!raw.startsWith("data: ")) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              assistantSoFar += content;
+              const finalContent = assistantSoFar;
+              setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.role === "assistant" ? { ...m, content: finalContent } : m));
+            }
+          } catch { /* ignore */ }
+        }
+      }
+    } catch (e) {
+      console.error("Chat error:", e);
+      toast({ title: "Erro de conexão", description: "Não foi possível conectar ao assistente.", variant: "destructive" });
+    }
+
+    setIsTyping(false);
   };
 
   const copyToClipboard = (text: string, id: string) => {
@@ -116,9 +183,9 @@ export default function ChatIA() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-neon-purple" /> Assistente IA
           </h1>
-          <p className="text-sm text-muted-foreground">Especialista TOTVS RM com base de conhecimento interna</p>
+          <p className="text-sm text-muted-foreground">Especialista TOTVS RM com base de conhecimento interna (RAG)</p>
         </div>
-        <Badge className="bg-neon-purple/15 text-neon-purple border-neon-purple/30">RAG Ativo</Badge>
+        <Badge className="bg-neon-purple/15 text-neon-purple border-neon-purple/30">IA Ativa • RAG</Badge>
       </div>
 
       {/* Messages */}
@@ -130,7 +197,7 @@ export default function ChatIA() {
             </div>
             <h3 className="text-lg font-semibold mb-1">PM Intelligence Assistant</h3>
             <p className="text-sm text-muted-foreground mb-6 max-w-md">
-              Pergunte sobre TOTVS RM, gere queries SQL, resolva erros e obtenha sugestões inteligentes.
+              Pergunte sobre TOTVS RM, gere queries SQL, resolva erros e obtenha sugestões inteligentes com IA real.
             </p>
             <div className="grid grid-cols-2 gap-2 max-w-lg">
               {quickActions.map(q => (
@@ -156,9 +223,7 @@ export default function ChatIA() {
                 </div>
               )}
               <div className={`max-w-[75%] rounded-xl px-4 py-3 text-sm ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "card-gradient border border-border/40"
+                msg.role === "user" ? "bg-primary text-primary-foreground" : "card-gradient border border-border/40"
               }`}>
                 {msg.role === "assistant" ? renderContent(msg.content) : msg.content}
               </div>
@@ -189,10 +254,10 @@ export default function ChatIA() {
 
       {/* Quick queries */}
       <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-thin pb-1">
-        {queriesRM.map(q => (
+        {queryShortcuts.map(q => (
           <button
             key={q.nome}
-            onClick={() => sendMessage(`Gere a query para: ${q.nome}`)}
+            onClick={() => sendMessage(q.prompt)}
             className="flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-full border border-border/40 bg-card/50 hover:border-accent/40 text-muted-foreground hover:text-accent transition-all whitespace-nowrap shrink-0"
           >
             <Database className="h-3 w-3" /> {q.nome}
