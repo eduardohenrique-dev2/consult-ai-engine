@@ -1,28 +1,16 @@
 import {
-  LayoutDashboard,
-  Ticket,
-  MessageSquareText,
-  Users,
-  Monitor,
-  BookOpen,
-  Zap,
-  Settings,
+  LayoutDashboard, Ticket, MessageSquareText, Users,
+  Monitor, BookOpen, Zap, Settings, LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import logoPm from "@/assets/logo-pm.png";
+import { Badge } from "@/components/ui/badge";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
-  useSidebar,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
+  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 
 const mainItems = [
@@ -43,8 +31,13 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { profile, role, signOut } = useAuth();
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+
+  const initials = profile?.nome
+    ? profile.nome.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
+    : "??";
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50">
@@ -70,12 +63,7 @@ export function AppSidebar() {
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/"}
-                      className="transition-colors hover:text-foreground"
-                      activeClassName="text-primary bg-primary/10"
-                    >
+                    <NavLink to={item.url} end={item.url === "/"} className="transition-colors hover:text-foreground" activeClassName="text-primary bg-primary/10">
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -95,11 +83,7 @@ export function AppSidebar() {
               {systemItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink
-                      to={item.url}
-                      className="transition-colors hover:text-foreground"
-                      activeClassName="text-primary bg-primary/10"
-                    >
+                    <NavLink to={item.url} className="transition-colors hover:text-foreground" activeClassName="text-primary bg-primary/10">
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -113,16 +97,24 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-3">
         {!collapsed && (
-          <div className="glass rounded-lg p-3">
+          <div className="glass rounded-lg p-3 space-y-2">
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                CP
+                {initials}
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-medium">Carlos Pereira</span>
-                <span className="text-[10px] text-muted-foreground">Admin</span>
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="text-xs font-medium truncate">{profile?.nome || "Usuário"}</span>
+                <Badge variant="outline" className="text-[9px] w-fit border-primary/30 text-primary capitalize">
+                  {role || "consultor"}
+                </Badge>
               </div>
             </div>
+            <button
+              onClick={signOut}
+              className="flex items-center gap-2 text-[10px] text-muted-foreground hover:text-destructive w-full py-1 transition-colors"
+            >
+              <LogOut className="h-3 w-3" /> Sair
+            </button>
           </div>
         )}
       </SidebarFooter>
