@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Ticket, Clock, CheckCircle, Timer, AlertTriangle, Activity } from "lucide-react";
+import { Ticket, Clock, CheckCircle, Timer, AlertTriangle, Activity, Users, TrendingUp } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,8 +8,16 @@ import {
   PieChart, Pie, Cell, AreaChart, Area,
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
+import { format, subDays, parseISO } from "date-fns";
 
-const tooltipStyle = { background: "hsl(228 18% 9%)", border: "1px solid hsl(228 15% 16%)", borderRadius: "8px", color: "hsl(220 20% 92%)" };
+const tooltipStyle = {
+  background: "hsl(228 18% 9%)",
+  border: "1px solid hsl(228 15% 16%)",
+  borderRadius: "10px",
+  color: "hsl(220 20% 92%)",
+  fontSize: "12px",
+  boxShadow: "0 8px 32px hsl(0 0% 0% / 0.4)",
+};
 
 export default function Dashboard() {
   const { data: chamados = [] } = useQuery({
@@ -37,6 +45,7 @@ export default function Dashboard() {
   };
 
   const abertos = chamados.filter(c => c.status !== "Finalizado").length;
+  const clientesCriticos = clientes.filter((c: any) => c.status === "CRITICO").length;
 
   const statusData = [
     { name: "Novo", value: statusCount.novo, color: "hsl(200, 100%, 60%)" },
@@ -46,14 +55,25 @@ export default function Dashboard() {
     { name: "Finalizado", value: statusCount.finalizado, color: "hsl(145, 65%, 48%)" },
   ];
 
-  const clienteData = clientes.map(c => ({
+  const clienteData = clientes.map((c: any) => ({
     name: c.nome.split(" ")[0],
     chamados: chamados.filter(ch => ch.cliente_id === c.id).length,
   })).filter(c => c.chamados > 0);
 
+  // Real trend data from chamados created_at
+  const trendData = Array.from({ length: 7 }, (_, i) => {
+    const date = subDays(new Date(), 6 - i);
+    const dateStr = format(date, "dd/MM");
+    const count = chamados.filter(c => {
+      const d = parseISO(c.created_at);
+      return format(d, "dd/MM") === dateStr;
+    }).length;
+    return { dia: dateStr, chamados: count };
+  });
+
   const alertas = clientes
-    .filter(c => c.status !== "OK")
-    .flatMap(c => (c.problemas || []).map((p: string) => ({
+    .filter((c: any) => c.status !== "OK")
+    .flatMap((c: any) => (c.problemas || []).map((p: string) => ({
       tipo: c.status === "CRITICO" ? "erro" as const : "alerta" as const,
       mensagem: p,
       cliente: c.nome,
@@ -62,40 +82,39 @@ export default function Dashboard() {
   const alertaStyles = {
     erro: "border-critical/30 bg-critical/5 text-critical",
     alerta: "border-warning/30 bg-warning/5 text-warning",
-    info: "border-accent/30 bg-accent/5 text-accent",
   };
 
-  const trendData = Array.from({ length: 7 }, (_, i) => ({
-    dia: `${19 + i}/03`,
-    chamados: Math.floor(Math.random() * 5) + 2,
-  }));
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Visão geral do sistema PM Intelligence</p>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">Visão geral do sistema PM Intelligence</p>
+        </div>
+        <Badge variant="outline" className="text-[10px] border-success/30 text-success gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Online
+        </Badge>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard title="Chamados Abertos" value={abertos} icon={Ticket} variant="accent" subtitle="Total ativos" />
         <StatCard title="Em Andamento" value={statusCount.analise + statusCount.execucao} icon={Clock} variant="warning" subtitle="Análise + Execução" />
-        <StatCard title="Finalizados" value={statusCount.finalizado} icon={CheckCircle} variant="success" trend="+12% este mês" />
-        <StatCard title="SLA Médio" value="4.2h" icon={Timer} variant="default" subtitle="Tempo de resposta" />
+        <StatCard title="Finalizados" value={statusCount.finalizado} icon={CheckCircle} variant="success" trend={chamados.length > 0 ? `${Math.round((statusCount.finalizado / Math.max(chamados.length, 1)) * 100)}% taxa resolução` : undefined} />
+        <StatCard title="Clientes" value={clientes.length} icon={Users} variant="default" subtitle={clientesCriticos > 0 ? `${clientesCriticos} em estado crítico` : "Todos operacionais"} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card-gradient rounded-xl border border-border/50 p-5">
-          <h3 className="text-sm font-semibold mb-4">Chamados por Status</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card-gradient rounded-xl border border-border/40 p-6">
+          <h3 className="text-sm font-semibold mb-5">Chamados por Status</h3>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
-              <Pie data={statusData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={4} dataKey="value">
+              <Pie data={statusData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value" strokeWidth={0}>
                 {statusData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
               </Pie>
               <Tooltip contentStyle={tooltipStyle} />
             </PieChart>
           </ResponsiveContainer>
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
             {statusData.map(s => (
               <div key={s.name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 <span className="h-2 w-2 rounded-full" style={{ background: s.color }} /> {s.name} ({s.value})
@@ -104,36 +123,36 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="card-gradient rounded-xl border border-border/50 p-5">
-          <h3 className="text-sm font-semibold mb-4">Chamados por Cliente</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={clienteData} barSize={24}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 15% 16%)" />
-              <XAxis dataKey="name" tick={{ fill: "hsl(220 10% 50%)", fontSize: 11 }} />
-              <YAxis tick={{ fill: "hsl(220 10% 50%)", fontSize: 11 }} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="chamados" fill="hsl(245, 80%, 65%)" radius={[6, 6, 0, 0]} />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="card-gradient rounded-xl border border-border/40 p-6">
+          <h3 className="text-sm font-semibold mb-5">Chamados por Cliente</h3>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={clienteData} barSize={28}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 15% 14%)" />
+              <XAxis dataKey="name" tick={{ fill: "hsl(220 10% 45%)", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "hsl(220 10% 45%)", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(228 15% 12%)" }} />
+              <Bar dataKey="chamados" fill="hsl(245, 80%, 65%)" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="card-gradient rounded-xl border border-border/50 p-5">
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <Activity className="h-4 w-4 text-primary" /> Tendência Semanal
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="card-gradient rounded-xl border border-border/40 p-6">
+          <h3 className="text-sm font-semibold mb-5 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" /> Tendência Semanal
           </h3>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={trendData}>
               <defs>
                 <linearGradient id="colorChamados" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(245, 80%, 65%)" stopOpacity={0.3} />
+                  <stop offset="5%" stopColor="hsl(245, 80%, 65%)" stopOpacity={0.25} />
                   <stop offset="95%" stopColor="hsl(245, 80%, 65%)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 15% 16%)" />
-              <XAxis dataKey="dia" tick={{ fill: "hsl(220 10% 50%)", fontSize: 11 }} />
-              <YAxis tick={{ fill: "hsl(220 10% 50%)", fontSize: 11 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(228 15% 14%)" />
+              <XAxis dataKey="dia" tick={{ fill: "hsl(220 10% 45%)", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "hsl(220 10% 45%)", fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={tooltipStyle} />
-              <Area type="monotone" dataKey="chamados" stroke="hsl(245, 80%, 65%)" fill="url(#colorChamados)" strokeWidth={2} />
+              <Area type="monotone" dataKey="chamados" stroke="hsl(245, 80%, 65%)" fill="url(#colorChamados)" strokeWidth={2.5} dot={{ r: 3, fill: "hsl(245, 80%, 65%)" }} />
             </AreaChart>
           </ResponsiveContainer>
         </motion.div>
@@ -141,16 +160,18 @@ export default function Dashboard() {
 
       {/* Alertas */}
       {alertas.length > 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="card-gradient rounded-xl border border-border/50 p-5">
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-warning" /> Alertas em Tempo Real
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="card-gradient rounded-xl border border-border/40 p-6">
+          <h3 className="text-sm font-semibold mb-5 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning" /> Alertas Ativos
+            <Badge variant="secondary" className="text-[9px] ml-2">{alertas.length}</Badge>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {alertas.map((a, i) => (
-              <div key={i} className={`rounded-lg border p-3 ${alertaStyles[a.tipo]}`}>
+              <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.05 }}
+                className={`rounded-xl border p-4 ${alertaStyles[a.tipo]}`}>
                 <p className="text-xs font-medium">{a.mensagem}</p>
-                <p className="text-[10px] opacity-70 mt-1">{a.cliente}</p>
-              </div>
+                <p className="text-[10px] opacity-70 mt-1.5">{a.cliente}</p>
+              </motion.div>
             ))}
           </div>
         </motion.div>
