@@ -35,13 +35,14 @@ export function FloatingChat() {
   const { messages, isTyping, sendMessage } = useChat(pageContext);
   const scrollRef = useRef<HTMLDivElement>(null);
   const suggestions = proactiveSuggestions[pageContext] || proactiveSuggestions.dashboard;
-
-  // Don't show on the dedicated chat page
-  if (location.pathname === "/chat") return null;
+  const isChatPage = location.pathname === "/chat";
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // Don't render on chat page
+  if (isChatPage) return null;
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -63,7 +64,7 @@ export function FloatingChat() {
             style={{ background: "var(--gradient-neon)" }}
           >
             <MessageSquare className="h-6 w-6 text-white" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-green-500 border-2 border-background animate-pulse" />
+            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-success border-2 border-background animate-pulse" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -114,7 +115,7 @@ export function FloatingChat() {
                     {suggestions.map(s => (
                       <button
                         key={s}
-                        onClick={() => { sendMessage(s); }}
+                        onClick={() => sendMessage(s)}
                         className="w-full text-left text-xs p-2.5 rounded-lg border border-border/40 bg-secondary/50 hover:border-primary/40 hover:bg-primary/5 transition-all"
                       >
                         {s}
