@@ -47,6 +47,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             {children}
           </main>
         </div>
+        <FloatingChat />
       </div>
     </SidebarProvider>
   );
