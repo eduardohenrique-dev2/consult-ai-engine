@@ -4,6 +4,7 @@ import { Bell, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { FloatingChat } from "@/components/FloatingChat";
 
 interface AppLayoutProps {
   children: React.ReactNode;
