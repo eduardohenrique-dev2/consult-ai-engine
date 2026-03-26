@@ -13,18 +13,17 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, pageContext, conversationId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // RAG: Search base_conhecimento for relevant context
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const lastUserMessage = [...messages].reverse().find((m: any) => m.role === "user")?.content || "";
 
-    // Search knowledge base using text matching
+    // RAG: Search base_conhecimento
     const searchTerms = lastUserMessage
       .toLowerCase()
       .split(/\s+/)
@@ -32,7 +31,6 @@ serve(async (req) => {
       .slice(0, 5);
 
     let ragContext = "";
-
     if (searchTerms.length > 0) {
       const orConditions = searchTerms
         .map((term: string) => `titulo.ilike.%${term}%,conteudo.ilike.%${term}%`)
@@ -46,47 +44,94 @@ serve(async (req) => {
 
       if (knowledgeResults && knowledgeResults.length > 0) {
         ragContext = "\n\n--- BASE DE CONHECIMENTO INTERNA (RAG) ---\n" +
-          knowledgeResults
-            .map((r: any) => `[${r.tipo}] ${r.titulo}:\n${r.conteudo}`)
-            .join("\n\n") +
+          knowledgeResults.map((r: any) => `[${r.tipo}] ${r.titulo}:\n${r.conteudo}`).join("\n\n") +
           "\n--- FIM DA BASE DE CONHECIMENTO ---\n";
       }
     }
 
-    // Also fetch recent chamados for context
-    const { data: recentChamados } = await supabase
-      .from("chamados")
-      .select("titulo, tipo, status, prioridade, sugestao_ia")
-      .order("created_at", { ascending: false })
-      .limit(5);
+    // Fetch contextual data based on page
+    let contextualData = "";
+    
+    if (pageContext === "chamados" || pageContext === "chat") {
+      const { data: recentChamados } = await supabase
+        .from("chamados")
+        .select("titulo, tipo, status, prioridade, sugestao_ia, descricao")
+        .order("created_at", { ascending: false })
+        .limit(10);
 
-    let chamadosContext = "";
-    if (recentChamados && recentChamados.length > 0) {
-      chamadosContext = "\n\n--- CHAMADOS RECENTES ---\n" +
-        recentChamados
-          .map((c: any) => `- ${c.titulo} (${c.tipo}, ${c.status}, prioridade: ${c.prioridade})`)
-          .join("\n") +
-        "\n--- FIM DOS CHAMADOS ---\n";
+      if (recentChamados?.length) {
+        contextualData += "\n\n--- CHAMADOS RECENTES ---\n" +
+          recentChamados.map((c: any) => `- ${c.titulo} (${c.tipo}, ${c.status}, prioridade: ${c.prioridade})${c.descricao ? ` - ${c.descricao}` : ""}`).join("\n") +
+          "\n--- FIM ---\n";
+      }
     }
 
-    const systemPrompt = `Você é o PM Intelligence Assistant, o assistente de IA especializado da Pereira Marques Consultoria, focado em TOTVS RM.
+    if (pageContext === "clientes" || pageContext === "monitoramento") {
+      const { data: clientes } = await supabase
+        .from("clientes")
+        .select("nome, status, problemas, cnpj")
+        .limit(20);
+
+      if (clientes?.length) {
+        contextualData += "\n\n--- CLIENTES ---\n" +
+          clientes.map((c: any) => `- ${c.nome} (${c.status})${c.problemas?.length ? ` Problemas: ${c.problemas.join(", ")}` : ""}`).join("\n") +
+          "\n--- FIM ---\n";
+      }
+    }
+
+    if (pageContext === "dashboard") {
+      const { data: stats } = await supabase.from("chamados").select("status, prioridade, tipo");
+      if (stats?.length) {
+        const total = stats.length;
+        const abertos = stats.filter((s: any) => s.status !== "Resolvido").length;
+        const criticos = stats.filter((s: any) => s.prioridade === "critica").length;
+        contextualData += `\n\n--- MÉTRICAS DASHBOARD ---\nTotal chamados: ${total}\nAbertos: ${abertos}\nCríticos: ${criticos}\n--- FIM ---\n`;
+      }
+    }
+
+    // Page-specific instructions
+    const pageInstructions: Record<string, string> = {
+      dashboard: "O usuário está no Dashboard. Ajude com métricas, KPIs e análise de performance.",
+      chamados: "O usuário está na tela de Chamados. Ajude a resolver tickets, sugerir SQL, e diagnosticar problemas TOTVS RM.",
+      clientes: "O usuário está na tela de Clientes. Ajude com análise de clientes, integrações e status.",
+      monitoramento: "O usuário está no Monitoramento. Ajude com saúde das integrações e alertas.",
+      conhecimento: "O usuário está na Base de Conhecimento. Ajude a criar e organizar documentação técnica.",
+      automacoes: "O usuário está em Automações. Ajude com fluxos automatizados e regras de negócio.",
+      configuracoes: "O usuário está em Configurações. Ajude com configuração do sistema.",
+      chat: "O usuário está no Chat IA dedicado. Responda qualquer pergunta sobre TOTVS RM.",
+    };
+
+    const pageInstruction = pageInstructions[pageContext || "chat"] || pageInstructions.chat;
+
+    const systemPrompt = `Você é o PM Intelligence Assistant, assistente de IA especializado da Pereira Marques Consultoria, focado em TOTVS RM.
+
+${pageInstruction}
 
 Suas capacidades:
-1. Responder perguntas sobre o sistema TOTVS RM (módulos Folha, Ponto, Benefícios, eSocial)
-2. Gerar queries SQL para o banco Oracle do RM (tabelas PFUNC, PFFINANC, PBENEFICIO, PRUBRICAS, etc.)
-3. Diagnosticar e explicar erros comuns
+1. Responder sobre TOTVS RM (Folha, Ponto, Benefícios, eSocial)
+2. Gerar queries SQL para Oracle RM (PFUNC, PFFINANC, PBENEFICIO, PRUBRICAS, etc.)
+3. Diagnosticar erros comuns
 4. Sugerir soluções baseadas na base de conhecimento interna
-5. Resumir e analisar chamados
+5. Analisar dados do sistema (chamados, clientes, métricas)
 
 Regras:
-- SEMPRE priorize informações da base de conhecimento interna (RAG) quando disponível
-- Formate queries SQL em blocos de código com \`\`\`sql
-- Seja direto e profissional, mas acessível
-- Quando gerar SQL, explique o que a query faz
-- Se não souber algo, diga e sugira onde buscar
+- Priorize informações da base de conhecimento (RAG) quando disponível
+- Formate SQL em blocos \`\`\`sql
+- Seja direto, profissional e acessível
+- Explique queries geradas
 - Responda em português brasileiro
+- Quando relevante, forneça: 1) Explicação 2) Solução recomendada 3) Query SQL
 
-${ragContext}${chamadosContext}`;
+${ragContext}${contextualData}`;
+
+    // Save user message to DB if conversationId provided
+    if (conversationId) {
+      await supabase.from("chat_messages").insert({
+        conversation_id: conversationId,
+        role: "user",
+        content: lastUserMessage,
+      });
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -96,33 +141,27 @@ ${ragContext}${chamadosContext}`;
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
         stream: true,
       }),
     });
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns segundos." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
       if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos de IA esgotados. Adicione fundos na sua conta Lovable." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: "Erro no gateway de IA" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Erro no gateway de IA" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(response.body, {
@@ -130,9 +169,8 @@ ${ragContext}${chamadosContext}`;
     });
   } catch (e) {
     console.error("chat error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
