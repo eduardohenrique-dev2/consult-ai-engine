@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, Sparkles, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -54,6 +54,18 @@ export default function Chamados() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Realtime subscription for chamados
+  useEffect(() => {
+    const channel = supabase
+      .channel("chamados-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "chamados" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["chamados-with-clients"] });
+        queryClient.invalidateQueries({ queryKey: ["chamados"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const { data: chamados = [] } = useQuery({
     queryKey: ["chamados-with-clients"],
