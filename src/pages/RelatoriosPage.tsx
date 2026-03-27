@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FileText, Download, TrendingUp, Users, Ticket, Clock, BarChart3 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { FileText, Download, TrendingUp, Users, Ticket, Clock, BarChart3, Sparkles, Loader2 } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -11,6 +10,7 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth, parseISO, differenceInHours } from "date-fns";
+import { toast } from "sonner";
 
 const tooltipStyle = {
   background: "hsl(228 18% 9%)",
@@ -30,8 +30,81 @@ const COLORS = [
   "hsl(0, 80%, 58%)",
 ];
 
+function generatePdfHtml(metrics: any, summary: string, monthLabel: string) {
+  const { total, finalizados, abertos, taxaResolucao, byType, byPriority, byClient } = metrics;
+
+  const typeRows = Object.entries(byType as Record<string, number>)
+    .map(([k, v]) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2d3a">${k}</td><td style="padding:8px 12px;border-bottom:1px solid #2a2d3a;text-align:right;font-weight:600">${v}</td></tr>`)
+    .join("");
+
+  const priorityRows = Object.entries(byPriority as Record<string, number>)
+    .map(([k, v]) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2d3a">${k}</td><td style="padding:8px 12px;border-bottom:1px solid #2a2d3a;text-align:right;font-weight:600">${v}</td></tr>`)
+    .join("");
+
+  const clientRows = Object.entries(byClient as Record<string, number>)
+    .sort(([, a], [, b]) => (b as number) - (a as number))
+    .slice(0, 10)
+    .map(([k, v]) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2d3a">${k}</td><td style="padding:8px 12px;border-bottom:1px solid #2a2d3a;text-align:right;font-weight:600">${v}</td></tr>`)
+    .join("");
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Relatório ${monthLabel}</title>
+<style>
+  @page { size: A4; margin: 20mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0c0d14; color: #d4d8e8; font-size: 13px; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1b2e 0%, #2d1f54 100%); padding: 32px; border-radius: 12px; margin-bottom: 24px; }
+  .header h1 { font-size: 22px; color: #fff; margin-bottom: 4px; }
+  .header p { color: #9ea3b5; font-size: 12px; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .card { background: #14151f; border: 1px solid #2a2d3a; border-radius: 10px; padding: 18px; }
+  .card .label { font-size: 11px; color: #7c8195; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card .value { font-size: 26px; font-weight: 700; color: #fff; margin-top: 6px; }
+  .tables { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+  .table-card { background: #14151f; border: 1px solid #2a2d3a; border-radius: 10px; padding: 18px; }
+  .table-card h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: #a5b0d0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .summary-card { background: linear-gradient(135deg, #14151f 0%, #1a1b30 100%); border: 1px solid #3b3f5c; border-radius: 12px; padding: 24px; }
+  .summary-card h3 { font-size: 14px; font-weight: 600; color: #a78bfa; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .summary-card p { color: #c4c9db; font-size: 12.5px; line-height: 1.7; white-space: pre-wrap; }
+  .footer { text-align: center; margin-top: 24px; color: #5a5e72; font-size: 10px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>📊 Relatório Mensal — ${monthLabel}</h1>
+    <p>PM Intelligence Assistant • Pereira Marques Consultoria</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="label">Total Chamados</div><div class="value">${total}</div></div>
+    <div class="card"><div class="label">Finalizados</div><div class="value" style="color:#4ade80">${finalizados}</div></div>
+    <div class="card"><div class="label">Em Aberto</div><div class="value" style="color:#fbbf24">${abertos}</div></div>
+    <div class="card"><div class="label">Taxa de Resolução</div><div class="value" style="color:#818cf8">${taxaResolucao}%</div></div>
+  </div>
+
+  <div class="tables">
+    <div class="table-card"><h3>Por Tipo</h3><table>${typeRows || '<tr><td style="color:#5a5e72">Sem dados</td></tr>'}</table></div>
+    <div class="table-card"><h3>Por Prioridade</h3><table>${priorityRows || '<tr><td style="color:#5a5e72">Sem dados</td></tr>'}</table></div>
+    <div class="table-card"><h3>Por Cliente (Top 10)</h3><table>${clientRows || '<tr><td style="color:#5a5e72">Sem dados</td></tr>'}</table></div>
+  </div>
+
+  <div class="summary-card">
+    <h3>✨ Resumo Inteligente (IA)</h3>
+    <p>${summary.replace(/\n/g, "<br>")}</p>
+  </div>
+
+  <div class="footer">Gerado automaticamente por PM Intelligence Assistant em ${format(new Date(), "dd/MM/yyyy HH:mm")}</div>
+</body>
+</html>`;
+}
+
 export default function RelatoriosPage() {
   const [monthOffset, setMonthOffset] = useState(0);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
 
   const targetDate = subMonths(new Date(), monthOffset);
   const monthStart = startOfMonth(targetDate);
@@ -54,19 +127,16 @@ export default function RelatoriosPage() {
   const abertos = total - finalizados;
   const taxaResolucao = total > 0 ? Math.round((finalizados / total) * 100) : 0;
 
-  // By type
   const byType = ["Folha", "Ponto", "Benefício", "eSocial"].map((tipo) => ({
     name: tipo,
     value: chamados.filter((c: any) => c.tipo === tipo).length,
   })).filter(t => t.value > 0);
 
-  // By priority
   const byPriority = ["baixa", "media", "alta", "critica"].map((p) => ({
     name: p.charAt(0).toUpperCase() + p.slice(1),
     value: chamados.filter((c: any) => c.prioridade === p).length,
   })).filter(t => t.value > 0);
 
-  // By client
   const byClient = Object.entries(
     chamados.reduce((acc: Record<string, number>, c: any) => {
       const name = c.clientes?.nome || "Sem cliente";
@@ -78,7 +148,6 @@ export default function RelatoriosPage() {
     .sort((a, b) => (b.value as number) - (a.value as number))
     .slice(0, 8);
 
-  // Average resolution time (hours) for finalized tickets
   const resolvedTickets = chamados.filter((c: any) => c.status === "Finalizado");
   const avgResolutionHours = resolvedTickets.length > 0
     ? Math.round(
@@ -90,27 +159,93 @@ export default function RelatoriosPage() {
 
   const monthLabel = format(targetDate, "MMMM yyyy");
 
+  const generateSummary = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("generate-report", {
+        body: {
+          monthStart: monthStart.toISOString(),
+          monthEnd: monthEnd.toISOString(),
+          monthLabel,
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      setAiSummary(data.summary);
+      toast.success("Resumo inteligente gerado!");
+    },
+    onError: () => toast.error("Erro ao gerar resumo"),
+  });
+
+  const handleExportPdf = async () => {
+    let summary = aiSummary;
+    if (!summary) {
+      toast.info("Gerando resumo inteligente antes de exportar...");
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-report", {
+          body: {
+            monthStart: monthStart.toISOString(),
+            monthEnd: monthEnd.toISOString(),
+            monthLabel,
+          },
+        });
+        if (error) throw error;
+        summary = data.summary;
+        setAiSummary(summary);
+      } catch {
+        summary = "Resumo não disponível.";
+      }
+    }
+
+    const byTypeObj = Object.fromEntries(byType.map(t => [t.name, t.value]));
+    const byPriorityObj = Object.fromEntries(byPriority.map(t => [t.name, t.value]));
+    const byClientObj = Object.fromEntries(byClient.map(t => [t.name, t.value]));
+
+    const html = generatePdfHtml(
+      { total, finalizados, abertos, taxaResolucao, byType: byTypeObj, byPriority: byPriorityObj, byClient: byClientObj },
+      summary || "Resumo não disponível.",
+      monthLabel
+    );
+
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      setTimeout(() => printWindow.print(), 500);
+    }
+  };
+
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <BarChart3 className="h-6 w-6 text-primary" /> Relatório Mensal
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Análise de performance e métricas</p>
         </div>
-        <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
-          <SelectTrigger className="w-48 bg-secondary border-border/50">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <SelectItem key={i} value={String(i)}>
-                {format(subMonths(new Date(), i), "MMMM yyyy")}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-3">
+          <Select value={String(monthOffset)} onValueChange={(v) => { setMonthOffset(Number(v)); setAiSummary(null); }}>
+            <SelectTrigger className="w-48 bg-secondary border-border/50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <SelectItem key={i} value={String(i)}>
+                  {format(subMonths(new Date(), i), "MMMM yyyy")}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={() => generateSummary.mutate()} disabled={generateSummary.isPending}>
+            {generateSummary.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
+            Resumo IA
+          </Button>
+          <Button size="sm" onClick={handleExportPdf}>
+            <Download className="h-4 w-4 mr-1" /> Exportar PDF
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -136,6 +271,16 @@ export default function RelatoriosPage() {
           </motion.div>
         ))}
       </div>
+
+      {/* AI Summary */}
+      {aiSummary && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="card-gradient rounded-xl border border-primary/30 p-6">
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-primary">
+            <Sparkles className="h-4 w-4" /> Resumo Inteligente (IA)
+          </h3>
+          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{aiSummary}</p>
+        </motion.div>
+      )}
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
