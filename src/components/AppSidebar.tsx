@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Ticket, MessageSquareText, Users,
-  Monitor, BookOpen, Zap, Settings, LogOut,
+  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Mail,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -23,6 +23,7 @@ const mainItems = [
 
 const systemItems = [
   { title: "Base de Conhecimento", url: "/conhecimento", icon: BookOpen },
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Automações", url: "/automacoes", icon: Zap },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];

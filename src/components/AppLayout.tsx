@@ -1,9 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Bell, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { FloatingChat } from "@/components/FloatingChat";
 
 interface AppLayoutProps {
@@ -11,15 +9,6 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const { data: alertCount = 0 } = useQuery({
-    queryKey: ["alert-count"],
-    queryFn: async () => {
-      const { data } = await supabase.from("clientes").select("id").neq("status", "OK");
-      return data?.length || 0;
-    },
-    refetchInterval: 30000,
-  });
-
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -30,16 +19,9 @@ export function AppLayout({ children }: AppLayoutProps) {
               <SidebarTrigger className="text-muted-foreground hover:text-foreground transition-colors" />
             </div>
             <div className="flex items-center gap-3">
-              <button className="relative p-2 rounded-lg hover:bg-secondary transition-colors group">
-                <Bell className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                {alertCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-critical text-[9px] text-white flex items-center justify-center font-bold">
-                    {alertCount}
-                  </span>
-                )}
-              </button>
+              <NotificationsPanel />
               <Badge variant="outline" className="text-[10px] border-border/40 text-muted-foreground">
-                v2.0
+                v2.1
               </Badge>
             </div>
           </header>
