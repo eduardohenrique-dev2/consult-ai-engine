@@ -109,8 +109,11 @@ export default function Dashboard() {
     const date = subDays(new Date(), 6 - i);
     const dateStr = format(date, "dd/MM");
     const count = chamados.filter(c => {
-      const d = parseISO(c.created_at);
-      return format(d, "dd/MM") === dateStr;
+      if (!c.created_at) return false;
+      try {
+        const d = parseISO(c.created_at);
+        return format(d, "dd/MM") === dateStr;
+      } catch { return false; }
     }).length;
     return { dia: dateStr, chamados: count };
   });
