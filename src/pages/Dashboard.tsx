@@ -135,9 +135,43 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">Visão geral do sistema PM Intelligence</p>
         </div>
-        <Badge variant="outline" className="text-[10px] border-success/30 text-success gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Online
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Dialog open={showSimulate} onOpenChange={setShowSimulate}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2 border-accent/30 text-accent hover:bg-accent/10 hover:text-accent shadow-lg shadow-accent/10 transition-all">
+                <Mail className="h-4 w-4" /> Simular Email
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="glass border-border/50 max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-accent" /> Simular Entrada de Email
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <p className="text-xs text-muted-foreground">Simule a chegada de um email de suporte. A IA irá analisar, classificar e criar um chamado automaticamente.</p>
+                <div>
+                  <Label className="text-xs font-medium">Assunto</Label>
+                  <Input value={simForm.subject} onChange={e => setSimForm(f => ({ ...f, subject: e.target.value }))} className="bg-secondary border-border/50 mt-1.5" placeholder="Ex: Erro no cálculo de folha do mês 03/2026" />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium">Descrição do Problema</Label>
+                  <Textarea value={simForm.body} onChange={e => setSimForm(f => ({ ...f, body: e.target.value }))} className="bg-secondary border-border/50 mt-1.5 min-h-[120px]" placeholder="Descreva o problema em detalhes..." />
+                </div>
+                <div className="flex gap-3 justify-end pt-2">
+                  <Button variant="outline" onClick={() => setShowSimulate(false)} className="border-border/50">Cancelar</Button>
+                  <Button onClick={handleSimulate} disabled={!simForm.subject.trim() || !simForm.body.trim() || simulating} className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg shadow-accent/20">
+                    {simulating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {simulating ? "Processando IA..." : "Simular"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Badge variant="outline" className="text-[10px] border-success/30 text-success gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Online
+          </Badge>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
