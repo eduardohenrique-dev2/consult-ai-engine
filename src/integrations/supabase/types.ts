@@ -62,6 +62,38 @@ export type Database = {
         }
         Relationships: []
       }
+      chamado_interactions: {
+        Row: {
+          chamado_id: string
+          created_at: string
+          id: string
+          pergunta: string
+          resposta: string
+        }
+        Insert: {
+          chamado_id: string
+          created_at?: string
+          id?: string
+          pergunta: string
+          resposta: string
+        }
+        Update: {
+          chamado_id?: string
+          created_at?: string
+          id?: string
+          pergunta?: string
+          resposta?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chamado_interactions_chamado_id_fkey"
+            columns: ["chamado_id"]
+            isOneToOne: false
+            referencedRelation: "chamados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chamados: {
         Row: {
           cliente_id: string | null

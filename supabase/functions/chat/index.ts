@@ -7,13 +7,45 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const STANDARDIZED_FORMAT = `
+FORMATO OBRIGATÓRIO DE RESPOSTA — siga SEMPRE esta estrutura:
+
+## 📌 RESUMO
+Explicação curta do problema (máximo 2 linhas).
+
+## 🔍 CAUSA PROVÁVEL
+- Item 1
+- Item 2
+- Item 3 (máximo 4 itens)
+
+## 🛠️ AÇÃO RECOMENDADA
+- [ ] Passo 1
+- [ ] Passo 2
+- [ ] Passo 3
+
+## 💻 QUERY SQL
+\`\`\`sql
+-- Query limpa e utilizável (se aplicável)
+\`\`\`
+
+## 💡 OBSERVAÇÃO
+Nota curta opcional.
+
+REGRAS:
+- Seja direto e técnico — sem textos longos
+- Foco em execução prática
+- Linguagem de consultoria TOTVS RM
+- Sempre sugira ação concreta
+- Se não houver query relevante, omita a seção SQL
+`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, pageContext, conversationId } = await req.json();
+    const { messages, pageContext, conversationId, chamadoId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -46,6 +78,24 @@ serve(async (req) => {
         ragContext = "\n\n--- BASE DE CONHECIMENTO INTERNA (RAG) ---\n" +
           knowledgeResults.map((r: any) => `[${r.tipo}] ${r.titulo}:\n${r.conteudo}`).join("\n\n") +
           "\n--- FIM DA BASE DE CONHECIMENTO ---\n";
+      }
+    }
+
+    // Fetch chamado history if chamadoId provided
+    let chamadoHistory = "";
+    if (chamadoId) {
+      const { data: interactions } = await supabase
+        .from("chamado_interactions")
+        .select("pergunta, resposta, created_at")
+        .eq("chamado_id", chamadoId)
+        .order("created_at", { ascending: true })
+        .limit(10);
+
+      if (interactions?.length) {
+        chamadoHistory = "\n\n--- HISTÓRICO DE INTERAÇÕES DESTE CHAMADO ---\n" +
+          interactions.map((i: any) => `Pergunta: ${i.pergunta}\nResposta: ${i.resposta}`).join("\n---\n") +
+          "\n--- FIM DO HISTÓRICO ---\n" +
+          "IMPORTANTE: Use este histórico para evitar respostas repetidas e evoluir a análise.\n";
       }
     }
 
@@ -83,13 +133,12 @@ serve(async (req) => {
       const { data: stats } = await supabase.from("chamados").select("status, prioridade, tipo");
       if (stats?.length) {
         const total = stats.length;
-        const abertos = stats.filter((s: any) => s.status !== "Resolvido").length;
+        const abertos = stats.filter((s: any) => s.status !== "Finalizado").length;
         const criticos = stats.filter((s: any) => s.prioridade === "critica").length;
         contextualData += `\n\n--- MÉTRICAS DASHBOARD ---\nTotal chamados: ${total}\nAbertos: ${abertos}\nCríticos: ${criticos}\n--- FIM ---\n`;
       }
     }
 
-    // Page-specific instructions
     const pageInstructions: Record<string, string> = {
       dashboard: "O usuário está no Dashboard. Ajude com métricas, KPIs e análise de performance.",
       chamados: "O usuário está na tela de Chamados. Ajude a resolver tickets, sugerir SQL, e diagnosticar problemas TOTVS RM.",
@@ -103,7 +152,7 @@ serve(async (req) => {
 
     const pageInstruction = pageInstructions[pageContext || "chat"] || pageInstructions.chat;
 
-    const systemPrompt = `Você é o PM Intelligence Assistant, assistente de IA especializado da Pereira Marques Consultoria, focado em TOTVS RM.
+    const systemPrompt = `Você é o PM Intelligence Assistant, copiloto operacional da Pereira Marques Consultoria, especialista em TOTVS RM.
 
 ${pageInstruction}
 
@@ -114,15 +163,12 @@ Suas capacidades:
 4. Sugerir soluções baseadas na base de conhecimento interna
 5. Analisar dados do sistema (chamados, clientes, métricas)
 
-Regras:
-- Priorize informações da base de conhecimento (RAG) quando disponível
-- Formate SQL em blocos \`\`\`sql
-- Seja direto, profissional e acessível
-- Explique queries geradas
-- Responda em português brasileiro
-- Quando relevante, forneça: 1) Explicação 2) Solução recomendada 3) Query SQL
+${STANDARDIZED_FORMAT}
 
-${ragContext}${contextualData}`;
+- Priorize informações da base de conhecimento (RAG) quando disponível
+- Responda em português brasileiro
+
+${ragContext}${chamadoHistory}${contextualData}`;
 
     // Save user message to DB if conversationId provided
     if (conversationId) {
