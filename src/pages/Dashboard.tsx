@@ -27,6 +27,12 @@ const tooltipStyle = {
 };
 
 export default function Dashboard() {
+  const [showSimulate, setShowSimulate] = useState(false);
+  const [simForm, setSimForm] = useState({ subject: "", body: "" });
+  const [simulating, setSimulating] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
   const { data: chamados = [] } = useQuery({
     queryKey: ["chamados"],
     queryFn: async () => {
@@ -34,6 +40,43 @@ export default function Dashboard() {
       return data || [];
     },
   });
+
+  const { data: clientes = [] } = useQuery({
+    queryKey: ["clientes"],
+    queryFn: async () => {
+      const { data } = await supabase.from("clientes").select("*");
+      return data || [];
+    },
+  });
+
+  const handleSimulate = async () => {
+    if (!simForm.subject.trim() || !simForm.body.trim()) return;
+    setSimulating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("process-email", {
+        body: {
+          subject: simForm.subject,
+          body: simForm.body,
+          sender: "simulacao@empresa.com",
+          sender_name: "Simulação Manual",
+        },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast({ title: "✅ Email processado!", description: `Chamado criado com tipo "${data.tipo}" e prioridade "${data.prioridade}".` });
+        queryClient.invalidateQueries({ queryKey: ["chamados"] });
+        queryClient.invalidateQueries({ queryKey: ["chamados-with-clients"] });
+        setShowSimulate(false);
+        setSimForm({ subject: "", body: "" });
+      } else {
+        toast({ title: "⚠️ Email ignorado", description: data?.reason || "Não identificado como chamado válido.", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message || "Falha ao processar email.", variant: "destructive" });
+    } finally {
+      setSimulating(false);
+    }
+  };
 
   const { data: clientes = [] } = useQuery({
     queryKey: ["clientes"],
