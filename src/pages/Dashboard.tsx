@@ -78,13 +78,7 @@ export default function Dashboard() {
     }
   };
 
-  const { data: clientes = [] } = useQuery({
-    queryKey: ["clientes"],
-    queryFn: async () => {
-      const { data } = await supabase.from("clientes").select("*");
-      return data || [];
-    },
-  });
+
 
   const statusCount = {
     novo: chamados.filter(c => c.status === "Novo").length,
