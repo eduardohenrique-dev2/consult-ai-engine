@@ -1,13 +1,20 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Ticket, Clock, CheckCircle, Timer, AlertTriangle, Activity, Users, TrendingUp } from "lucide-react";
+import { Ticket, Clock, CheckCircle, Timer, AlertTriangle, Activity, Users, TrendingUp, Mail, Loader2, Sparkles } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area,
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import { format, subDays, parseISO } from "date-fns";
 
 const tooltipStyle = {
