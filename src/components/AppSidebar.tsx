@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Ticket, MessageSquareText, Users,
-  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Mail,
+  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Mail, Shield,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -26,6 +26,7 @@ const systemItems = [
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Automações", url: "/automacoes", icon: Zap },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { title: "Admin", url: "/admin", icon: Shield, adminOnly: true },
 ];
 
 export function AppSidebar() {
@@ -81,7 +82,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {systemItems.map((item) => (
+              {systemItems.filter((item: any) => !item.adminOnly || role === "admin").map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
                     <NavLink to={item.url} className="transition-colors hover:text-foreground" activeClassName="text-primary bg-primary/10">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Sparkles, Loader2, MessageSquare, Send, History } from "lucide-react";
+import { Plus, Search, Sparkles, Loader2, MessageSquare, Send, History, Pencil, Trash2, Save, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,6 +99,19 @@ export default function Chamados() {
     },
   });
 
+  const deleteChamado = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("chamados").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chamados-with-clients"] });
+      queryClient.invalidateQueries({ queryKey: ["chamados"] });
+      setSelectedChamado(null);
+      toast({ title: "🗑️ Chamado excluído" });
+    },
+  });
+
   const filtered = chamados.filter((c: any) =>
     c.titulo.toLowerCase().includes(search.toLowerCase()) ||
     (c.clientes?.nome || "").toLowerCase().includes(search.toLowerCase())
@@ -177,7 +191,16 @@ export default function Chamados() {
       <Dialog open={!!selectedChamado} onOpenChange={() => setSelectedChamado(null)}>
         <DialogContent className="glass border-border/50 max-w-2xl max-h-[85vh]">
           {selectedChamado && (
-            <ChamadoDetail chamado={selectedChamado} />
+            <ChamadoDetail
+              chamado={selectedChamado}
+              clientes={clientes}
+              onDelete={() => deleteChamado.mutate(selectedChamado.id)}
+              onUpdated={(updated: any) => {
+                setSelectedChamado(updated);
+                queryClient.invalidateQueries({ queryKey: ["chamados-with-clients"] });
+                queryClient.invalidateQueries({ queryKey: ["chamados"] });
+              }}
+            />
           )}
         </DialogContent>
       </Dialog>
@@ -185,11 +208,22 @@ export default function Chamados() {
   );
 }
 
-function ChamadoDetail({ chamado }: { chamado: any }) {
+function ChamadoDetail({ chamado, clientes, onDelete, onUpdated }: { chamado: any; clientes: any[]; onDelete: () => void; onUpdated: (c: any) => void }) {
   const [activeTab, setActiveTab] = useState("detalhes");
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
   const [aiResponse, setAiResponse] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    titulo: chamado.titulo,
+    descricao: chamado.descricao || "",
+    tipo: chamado.tipo,
+    prioridade: chamado.prioridade,
+    status: chamado.status,
+    cliente_id: chamado.cliente_id || "",
+    observacoes: (chamado as any).observacoes || "",
+  });
+  const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -204,6 +238,39 @@ function ChamadoDetail({ chamado }: { chamado: any }) {
       return data || [];
     },
   });
+
+  const handleSaveEdit = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("chamados").update({
+      titulo: editForm.titulo,
+      descricao: editForm.descricao || null,
+      tipo: editForm.tipo,
+      prioridade: editForm.prioridade,
+      status: editForm.status,
+      cliente_id: editForm.cliente_id || null,
+      observacoes: editForm.observacoes || null,
+    } as any).eq("id", chamado.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Erro ao salvar", variant: "destructive" });
+      return;
+    }
+    toast({ title: "✅ Chamado atualizado" });
+    setEditing(false);
+    // Refresh with updated data
+    const { data } = await supabase.from("chamados").select("*, clientes(nome)").eq("id", chamado.id).single();
+    if (data) onUpdated(data);
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    const { error } = await supabase.from("chamados").update({ status: newStatus }).eq("id", chamado.id);
+    if (!error) {
+      setEditForm(f => ({ ...f, status: newStatus }));
+      const { data } = await supabase.from("chamados").select("*, clientes(nome)").eq("id", chamado.id).single();
+      if (data) onUpdated(data);
+      toast({ title: `Status → ${newStatus}` });
+    }
+  };
 
   const handleAskAI = async () => {
     if (!question.trim()) return;
@@ -257,7 +324,6 @@ function ChamadoDetail({ chamado }: { chamado: any }) {
         }
       }
 
-      // Save interaction
       if (fullResponse) {
         await supabase.from("chamado_interactions").insert({
           chamado_id: chamado.id,
@@ -276,7 +342,35 @@ function ChamadoDetail({ chamado }: { chamado: any }) {
 
   return (
     <>
-      <DialogHeader><DialogTitle>{chamado.titulo}</DialogTitle></DialogHeader>
+      <DialogHeader>
+        <div className="flex items-center justify-between pr-6">
+          <DialogTitle className="text-lg">{chamado.titulo}</DialogTitle>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="ghost" className="h-8 gap-1.5 text-xs" onClick={() => setEditing(!editing)}>
+              {editing ? <X className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+              {editing ? "Cancelar" : "Editar"}
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-8 gap-1.5 text-xs text-destructive hover:text-destructive">
+                  <Trash2 className="h-3.5 w-3.5" /> Excluir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="glass border-border/50">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir chamado?</AlertDialogTitle>
+                  <AlertDialogDescription>Esta ação não pode ser desfeita. O chamado e seu histórico serão removidos permanentemente.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={onDelete} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </DialogHeader>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
         <TabsList className="grid w-full grid-cols-3 bg-secondary/50">
           <TabsTrigger value="detalhes" className="text-xs gap-1.5"><Search className="h-3 w-3" /> Detalhes</TabsTrigger>
@@ -284,28 +378,91 @@ function ChamadoDetail({ chamado }: { chamado: any }) {
           <TabsTrigger value="historico" className="text-xs gap-1.5"><History className="h-3 w-3" /> Histórico IA <Badge variant="secondary" className="text-[9px] h-4 ml-1">{interactions.length}</Badge></TabsTrigger>
         </TabsList>
 
-        <TabsContent value="detalhes" className="space-y-4 mt-4">
-          <p className="text-sm text-muted-foreground leading-relaxed">{chamado.descricao}</p>
-          <div className="grid grid-cols-2 gap-4 text-xs">
-            <div className="space-y-1"><span className="text-muted-foreground block">Cliente</span><span className="font-medium">{chamado.clientes?.nome || "—"}</span></div>
-            <div className="space-y-1"><span className="text-muted-foreground block">Tipo</span><span className={`px-2 py-0.5 rounded-full text-[10px] ${tipoColors[chamado.tipo] || ""}`}>{chamado.tipo}</span></div>
-            <div className="space-y-1"><span className="text-muted-foreground block">Prioridade</span><span className="font-medium capitalize">{chamado.prioridade}</span></div>
-            <div className="space-y-1"><span className="text-muted-foreground block">Status</span><span className="font-medium">{chamado.status}</span></div>
-          </div>
-          {chamado.sugestao_ia && (
-            <div className="rounded-xl border border-neon-purple/30 bg-neon-purple/5 p-4">
-              <div className="flex items-center gap-2 text-xs font-semibold text-neon-purple mb-2"><Sparkles className="h-3.5 w-3.5" /> Análise da IA</div>
-              <div className="text-xs text-muted-foreground leading-relaxed prose prose-sm prose-invert max-w-none">
-                <ReactMarkdown>{chamado.sugestao_ia}</ReactMarkdown>
+        <TabsContent value="detalhes" className="mt-4">
+          <ScrollArea className="h-[500px] pr-2">
+            <div className="space-y-5">
+              {/* Status quick-change */}
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/20">
+                <span className="text-xs text-muted-foreground font-medium">Status:</span>
+                <Select value={editForm.status} onValueChange={handleStatusChange}>
+                  <SelectTrigger className="w-40 h-8 text-xs bg-background border-border/50"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {columns.map(c => <SelectItem key={c.status} value={c.status}>{c.status}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
+
+              {editing ? (
+                <div className="space-y-4">
+                  <div><Label className="text-xs">Título</Label><Input value={editForm.titulo} onChange={e => setEditForm(f => ({ ...f, titulo: e.target.value }))} className="bg-secondary border-border/50 mt-1" /></div>
+                  <div><Label className="text-xs">Descrição</Label><Textarea value={editForm.descricao} onChange={e => setEditForm(f => ({ ...f, descricao: e.target.value }))} className="bg-secondary border-border/50 mt-1" /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Tipo</Label>
+                      <Select value={editForm.tipo} onValueChange={v => setEditForm(f => ({ ...f, tipo: v }))}>
+                        <SelectTrigger className="bg-secondary border-border/50 mt-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>{["Folha", "Ponto", "Benefício", "eSocial"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Prioridade</Label>
+                      <Select value={editForm.prioridade} onValueChange={v => setEditForm(f => ({ ...f, prioridade: v }))}>
+                        <SelectTrigger className="bg-secondary border-border/50 mt-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>{["baixa", "media", "alta", "critica"].map(p => <SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Cliente</Label>
+                    <Select value={editForm.cliente_id} onValueChange={v => setEditForm(f => ({ ...f, cliente_id: v }))}>
+                      <SelectTrigger className="bg-secondary border-border/50 mt-1"><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+                      <SelectContent>{clientes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label className="text-xs">Observações internas</Label><Textarea value={editForm.observacoes} onChange={e => setEditForm(f => ({ ...f, observacoes: e.target.value }))} className="bg-secondary border-border/50 mt-1" placeholder="Notas internas..." /></div>
+                  <Button onClick={handleSaveEdit} disabled={saving} className="gap-2">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Salvar
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  {/* Info section */}
+                  <div className="rounded-xl border border-border/30 bg-secondary/20 p-4 space-y-3">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">📌 Informações Gerais</h4>
+                    {chamado.descricao && <p className="text-sm text-muted-foreground leading-relaxed">{chamado.descricao}</p>}
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="space-y-1"><span className="text-muted-foreground block">Cliente</span><span className="font-medium">{chamado.clientes?.nome || "—"}</span></div>
+                      <div className="space-y-1"><span className="text-muted-foreground block">Tipo</span><span className={`px-2 py-0.5 rounded-full text-[10px] ${tipoColors[chamado.tipo] || ""}`}>{chamado.tipo}</span></div>
+                      <div className="space-y-1"><span className="text-muted-foreground block">Prioridade</span><span className="font-medium capitalize">{chamado.prioridade}</span></div>
+                      <div className="space-y-1"><span className="text-muted-foreground block">Criado em</span><span className="font-medium">{new Date(chamado.created_at).toLocaleDateString("pt-BR")}</span></div>
+                    </div>
+                    {(chamado as any).observacoes && (
+                      <div className="pt-2 border-t border-border/20">
+                        <span className="text-[10px] text-muted-foreground font-medium block mb-1">Observações</span>
+                        <p className="text-xs text-foreground/80">{(chamado as any).observacoes}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AI Analysis */}
+                  {chamado.sugestao_ia && (
+                    <div className="rounded-xl border border-neon-purple/30 bg-neon-purple/5 p-4">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">🤖 Análise da IA</h4>
+                      <div className="text-xs text-muted-foreground leading-relaxed prose prose-sm prose-invert max-w-none">
+                        <ReactMarkdown>{chamado.sugestao_ia}</ReactMarkdown>
+                      </div>
+                    </div>
+                  )}
+                  {chamado.query_sugerida && (
+                    <div className="rounded-xl bg-secondary/80 p-4">
+                      <p className="text-[10px] text-muted-foreground mb-2 font-medium uppercase tracking-wider">💻 Query SQL Sugerida</p>
+                      <code className="text-xs text-accent font-mono block whitespace-pre-wrap">{chamado.query_sugerida}</code>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-          )}
-          {chamado.query_sugerida && (
-            <div className="rounded-xl bg-secondary/80 p-4">
-              <p className="text-[10px] text-muted-foreground mb-2 font-medium uppercase tracking-wider">Query SQL Sugerida</p>
-              <code className="text-xs text-accent font-mono block whitespace-pre-wrap">{chamado.query_sugerida}</code>
-            </div>
-          )}
+          </ScrollArea>
         </TabsContent>
 
         <TabsContent value="ia" className="space-y-4 mt-4">
