@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Ticket, MessageSquareText, Users,
-  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Mail,
+  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Mail, Shield,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
