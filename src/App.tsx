@@ -15,6 +15,7 @@ import BaseConhecimento from "./pages/BaseConhecimento";
 import AutomacoesPage from "./pages/AutomacoesPage";
 import RelatoriosPage from "./pages/RelatoriosPage";
 import Configuracoes from "./pages/Configuracoes";
+import AdminPage from "./pages/AdminPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 
