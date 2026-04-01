@@ -82,7 +82,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {systemItems.map((item) => (
+              {systemItems.filter((item: any) => !item.adminOnly || role === "admin").map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
                     <NavLink to={item.url} className="transition-colors hover:text-foreground" activeClassName="text-primary bg-primary/10">
