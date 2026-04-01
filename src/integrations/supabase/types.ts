@@ -100,6 +100,7 @@ export type Database = {
           created_at: string
           descricao: string | null
           id: string
+          observacoes: string | null
           prioridade: string
           query_sugerida: string | null
           responsavel_id: string | null
@@ -114,6 +115,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           id?: string
+          observacoes?: string | null
           prioridade?: string
           query_sugerida?: string | null
           responsavel_id?: string | null
@@ -128,6 +130,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           id?: string
+          observacoes?: string | null
           prioridade?: string
           query_sugerida?: string | null
           responsavel_id?: string | null
@@ -214,6 +217,7 @@ export type Database = {
       clientes: {
         Row: {
           cnpj: string | null
+          contato: string | null
           created_at: string
           id: string
           nome: string
@@ -222,6 +226,7 @@ export type Database = {
         }
         Insert: {
           cnpj?: string | null
+          contato?: string | null
           created_at?: string
           id?: string
           nome: string
@@ -230,6 +235,7 @@ export type Database = {
         }
         Update: {
           cnpj?: string | null
+          contato?: string | null
           created_at?: string
           id?: string
           nome?: string
