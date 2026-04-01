@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Ticket, Clock, CheckCircle, Timer, AlertTriangle, Activity, Users, TrendingUp, Mail, Loader2, Sparkles } from "lucide-react";
+import { Ticket, Clock, CheckCircle, Timer, AlertTriangle, Activity, Users, TrendingUp, Mail, Loader2, Sparkles, Zap } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { format, subDays, parseISO } from "date-fns";
+import { format, subDays, parseISO, differenceInHours } from "date-fns";
 
 const tooltipStyle = {
   background: "hsl(228 18% 9%)",
@@ -78,8 +78,6 @@ export default function Dashboard() {
     }
   };
 
-
-
   const statusCount = {
     novo: chamados.filter(c => c.status === "Novo").length,
     analise: chamados.filter(c => c.status === "Em análise").length,
@@ -90,6 +88,14 @@ export default function Dashboard() {
 
   const abertos = chamados.filter(c => c.status !== "Finalizado").length;
   const clientesCriticos = clientes.filter((c: any) => c.status === "CRITICO").length;
+
+  // Average resolution time
+  const finalizados = chamados.filter(c => c.status === "Finalizado" && c.created_at && c.updated_at);
+  const avgHours = finalizados.length > 0
+    ? Math.round(finalizados.reduce((sum, c) => {
+        try { return sum + differenceInHours(new Date(c.updated_at), new Date(c.created_at)); } catch { return sum; }
+      }, 0) / finalizados.length)
+    : 0;
 
   const statusData = [
     { name: "Novo", value: statusCount.novo, color: "hsl(200, 100%, 60%)" },
@@ -104,16 +110,12 @@ export default function Dashboard() {
     chamados: chamados.filter(ch => ch.cliente_id === c.id).length,
   })).filter(c => c.chamados > 0);
 
-  // Real trend data from chamados created_at
   const trendData = Array.from({ length: 7 }, (_, i) => {
     const date = subDays(new Date(), 6 - i);
     const dateStr = format(date, "dd/MM");
     const count = chamados.filter(c => {
       if (!c.created_at) return false;
-      try {
-        const d = parseISO(c.created_at);
-        return format(d, "dd/MM") === dateStr;
-      } catch { return false; }
+      try { return format(parseISO(c.created_at), "dd/MM") === dateStr; } catch { return false; }
     }).length;
     return { dia: dateStr, chamados: count };
   });
@@ -130,6 +132,8 @@ export default function Dashboard() {
     erro: "border-critical/30 bg-critical/5 text-critical",
     alerta: "border-warning/30 bg-warning/5 text-warning",
   };
+
+  const taxaResolucao = chamados.length > 0 ? Math.round((statusCount.finalizado / chamados.length) * 100) : 0;
 
   return (
     <div className="space-y-8">
@@ -177,11 +181,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard title="Chamados Abertos" value={abertos} icon={Ticket} variant="accent" subtitle="Total ativos" />
         <StatCard title="Em Andamento" value={statusCount.analise + statusCount.execucao} icon={Clock} variant="warning" subtitle="Análise + Execução" />
-        <StatCard title="Finalizados" value={statusCount.finalizado} icon={CheckCircle} variant="success" trend={chamados.length > 0 ? `${Math.round((statusCount.finalizado / Math.max(chamados.length, 1)) * 100)}% taxa resolução` : undefined} />
-        <StatCard title="Clientes" value={clientes.length} icon={Users} variant="default" subtitle={clientesCriticos > 0 ? `${clientesCriticos} em estado crítico` : "Todos operacionais"} />
+        <StatCard title="Finalizados" value={statusCount.finalizado} icon={CheckCircle} variant="success" subtitle={`${taxaResolucao}% resolução`} />
+        <StatCard title="Tempo Médio" value={avgHours > 0 ? `${avgHours}h` : "—"} icon={Timer} variant="default" subtitle="Resolução (horas)" />
+        <StatCard title="Clientes" value={clientes.length} icon={Users} variant={clientesCriticos > 0 ? "critical" : "default"} subtitle={clientesCriticos > 0 ? `${clientesCriticos} crítico(s)` : "Operacionais"} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -239,7 +244,6 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* Alertas */}
       {alertas.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="card-gradient rounded-xl border border-border/40 p-6">
           <h3 className="text-sm font-semibold mb-5 flex items-center gap-2">
