@@ -26,6 +26,7 @@ const systemItems = [
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Automações", url: "/automacoes", icon: Zap },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { title: "Admin", url: "/admin", icon: Shield, adminOnly: true },
 ];
 
 export function AppSidebar() {
