@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Ticket, MessageSquareText, Users,
-  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Mail, Shield,
+  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Shield,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -39,25 +39,25 @@ export function AppSidebar() {
 
   const initials = profile?.nome
     ? profile.nome.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
-    : "??";
+    : "PM";
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/50">
+    <Sidebar collapsible="icon" className="border-r border-border/30">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <img src={logoPm} alt="PM Consultoria" className="h-9 w-9 rounded-lg object-cover" />
+          <img src={logoPm} alt="PM Consultoria" className="h-8 w-8 rounded-lg object-cover ring-1 ring-border/30" />
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-bold gold-gradient">PM Intelligence</span>
-              <span className="text-[10px] text-muted-foreground">Pereira Marques Consultoria</span>
+              <span className="text-sm font-extrabold gold-gradient leading-tight">PM Intelligence</span>
+              <span className="text-[9px] text-muted-foreground/60">Pereira Marques</span>
             </div>
           )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="scrollbar-thin">
+      <SidebarContent className="scrollbar-thin px-2">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
+          <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/50 font-semibold px-2">
             Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -65,9 +65,9 @@ export function AppSidebar() {
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url} end={item.url === "/"} className="transition-colors hover:text-foreground" activeClassName="text-primary bg-primary/10">
+                    <NavLink to={item.url} end={item.url === "/"} className="transition-all hover:text-foreground rounded-xl" activeClassName="text-primary bg-primary/10">
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span className="text-[13px]">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -77,7 +77,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
+          <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/50 font-semibold px-2">
             Sistema
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -85,9 +85,9 @@ export function AppSidebar() {
               {systemItems.filter((item: any) => !item.adminOnly || role === "admin").map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url} className="transition-colors hover:text-foreground" activeClassName="text-primary bg-primary/10">
+                    <NavLink to={item.url} className="transition-all hover:text-foreground rounded-xl" activeClassName="text-primary bg-primary/10">
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span className="text-[13px]">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -99,21 +99,21 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-3">
         {!collapsed && (
-          <div className="glass rounded-lg p-3 space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+          <div className="glass rounded-xl p-3 space-y-2">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center text-[10px] font-bold text-primary ring-1 ring-primary/20">
                 {initials}
               </div>
               <div className="flex flex-col flex-1 min-w-0">
-                <span className="text-xs font-medium truncate">{profile?.nome || "Usuário"}</span>
-                <Badge variant="outline" className="text-[9px] w-fit border-primary/30 text-primary capitalize">
+                <span className="text-xs font-semibold truncate">{profile?.nome || "Usuário"}</span>
+                <Badge variant="outline" className="text-[8px] w-fit border-primary/20 text-primary/80 capitalize px-1.5">
                   {role || "consultor"}
                 </Badge>
               </div>
             </div>
             <button
               onClick={signOut}
-              className="flex items-center gap-2 text-[10px] text-muted-foreground hover:text-destructive w-full py-1 transition-colors"
+              className="flex items-center gap-2 text-[10px] text-muted-foreground/60 hover:text-destructive w-full py-1 transition-colors"
             >
               <LogOut className="h-3 w-3" /> Sair
             </button>
