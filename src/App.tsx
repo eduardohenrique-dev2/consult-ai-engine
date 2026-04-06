@@ -31,21 +31,23 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="*" element={
-              <AppLayout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/chamados" element={<Chamados />} />
-                  <Route path="/chat" element={<ChatIA />} />
-                  <Route path="/clientes" element={<ClientesPage />} />
-                  <Route path="/monitoramento" element={<Monitoramento />} />
-                  <Route path="/conhecimento" element={<BaseConhecimento />} />
-                  <Route path="/relatorios" element={<RelatoriosPage />} />
-                  <Route path="/automacoes" element={<AutomacoesPage />} />
-                  <Route path="/configuracoes" element={<Configuracoes />} />
-                  <Route path="/admin" element={<AdminPage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </AppLayout>
+              <ProtectedRoute>
+                <AppLayout>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/chamados" element={<Chamados />} />
+                    <Route path="/chat" element={<ChatIA />} />
+                    <Route path="/clientes" element={<ClientesPage />} />
+                    <Route path="/monitoramento" element={<Monitoramento />} />
+                    <Route path="/conhecimento" element={<BaseConhecimento />} />
+                    <Route path="/relatorios" element={<RelatoriosPage />} />
+                    <Route path="/automacoes" element={<AutomacoesPage />} />
+                    <Route path="/configuracoes" element={<Configuracoes />} />
+                    <Route path="/admin" element={<AdminPage />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </AppLayout>
+              </ProtectedRoute>
             } />
           </Routes>
         </BrowserRouter>
