@@ -333,6 +333,78 @@ export type Database = {
         }
         Relationships: []
       }
+      reunioes: {
+        Row: {
+          chamado_id: string | null
+          cliente_id: string | null
+          cor: string
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          descricao: string | null
+          id: string
+          notas: string | null
+          participantes: string[] | null
+          pauta_ia: string | null
+          proximos_passos_ia: string | null
+          resumo_ia: string | null
+          status: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          chamado_id?: string | null
+          cliente_id?: string | null
+          cor?: string
+          created_at?: string
+          data_fim: string
+          data_inicio: string
+          descricao?: string | null
+          id?: string
+          notas?: string | null
+          participantes?: string[] | null
+          pauta_ia?: string | null
+          proximos_passos_ia?: string | null
+          resumo_ia?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          chamado_id?: string | null
+          cliente_id?: string | null
+          cor?: string
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          descricao?: string | null
+          id?: string
+          notas?: string | null
+          participantes?: string[] | null
+          pauta_ia?: string | null
+          proximos_passos_ia?: string | null
+          resumo_ia?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reunioes_chamado_id_fkey"
+            columns: ["chamado_id"]
+            isOneToOne: false
+            referencedRelation: "chamados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reunioes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
