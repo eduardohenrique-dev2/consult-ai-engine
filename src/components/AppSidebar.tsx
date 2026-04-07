@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Ticket, MessageSquareText, Users,
-  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Shield,
+  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Shield, CalendarDays,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -19,6 +19,7 @@ const mainItems = [
   { title: "Assistente IA", url: "/chat", icon: MessageSquareText },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Monitoramento", url: "/monitoramento", icon: Monitor },
+  { title: "Reuniões", url: "/reunioes", icon: CalendarDays },
 ];
 
 const systemItems = [

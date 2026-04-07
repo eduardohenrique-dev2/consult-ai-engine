@@ -16,6 +16,7 @@ import AutomacoesPage from "./pages/AutomacoesPage";
 import RelatoriosPage from "./pages/RelatoriosPage";
 import Configuracoes from "./pages/Configuracoes";
 import AdminPage from "./pages/AdminPage";
+import ReunioesPage from "./pages/ReunioesPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 
@@ -44,6 +45,7 @@ const App = () => (
                     <Route path="/automacoes" element={<AutomacoesPage />} />
                     <Route path="/configuracoes" element={<Configuracoes />} />
                     <Route path="/admin" element={<AdminPage />} />
+                    <Route path="/reunioes" element={<ReunioesPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </AppLayout>
