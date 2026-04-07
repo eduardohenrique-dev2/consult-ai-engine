@@ -67,7 +67,8 @@ export function useReunioes() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Reuniao> & { id: string }) => {
-      const { data, error } = await supabase.from("reunioes").update(updates).eq("id", id).select().single();
+      const { clientes, chamados, ...cleanUpdates } = updates as any;
+      const { data, error } = await supabase.from("reunioes").update(cleanUpdates).eq("id", id).select().single();
       if (error) throw error;
       return data;
     },
