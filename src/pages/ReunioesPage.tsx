@@ -127,7 +127,7 @@ export default function ReunioesPage() {
 
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Filtros</p>
-            <Select value={filterCliente} onValueChange={setFilterCliente}>
+            <Select value={filterCliente || "all"} onValueChange={v => setFilterCliente(v === "all" ? "" : v)}>
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue placeholder="Todos os clientes" />
               </SelectTrigger>

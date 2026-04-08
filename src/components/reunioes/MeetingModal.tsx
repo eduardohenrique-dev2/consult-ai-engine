@@ -125,20 +125,20 @@ export function MeetingModal({ open, onClose, onSave, saving, initial, defaultDa
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Cliente</Label>
-              <Select value={form.cliente_id} onValueChange={v => setForm(f => ({ ...f, cliente_id: v }))}>
+              <Select value={form.cliente_id || "none"} onValueChange={v => setForm(f => ({ ...f, cliente_id: v === "none" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="none">Nenhum</SelectItem>
                   {clientes?.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Chamado vinculado</Label>
-              <Select value={form.chamado_id} onValueChange={v => setForm(f => ({ ...f, chamado_id: v }))}>
+              <Select value={form.chamado_id || "none"} onValueChange={v => setForm(f => ({ ...f, chamado_id: v === "none" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="none">Nenhum</SelectItem>
                   {chamados?.map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
                 </SelectContent>
               </Select>
