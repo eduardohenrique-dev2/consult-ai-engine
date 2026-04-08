@@ -132,7 +132,7 @@ export default function ReunioesPage() {
                 <SelectValue placeholder="Todos os clientes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 {clientes.map(([id, nome]) => (
                   <SelectItem key={id} value={id}>{nome}</SelectItem>
                 ))}
