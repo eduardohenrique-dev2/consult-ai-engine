@@ -94,10 +94,10 @@ export default function ReunioesPage() {
   const activeDetail = selectedReuniao ? reunioes.find(r => r.id === selectedReuniao.id) || null : null;
 
   return (
-    <div className="h-full flex flex-col">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between p-4 border-b border-border/20">
+    <div className="h-full flex flex-col bg-background/50">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between p-4 border-b border-border/10 bg-card/30">
         <div className="flex items-center gap-3">
-          <CalIcon className="h-5 w-5 text-primary" />
+          <CalIcon className="h-5 w-5 text-primary/70" />
           <h1 className="text-lg font-bold">Reuniões</h1>
           <Badge variant="outline" className="text-xs">{reunioes.length} total</Badge>
         </div>
@@ -113,7 +113,7 @@ export default function ReunioesPage() {
       </motion.div>
 
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-64 shrink-0 border-r border-border/20 p-3 space-y-4 hidden lg:block overflow-y-auto">
+        <div className="w-64 shrink-0 border-r border-border/10 p-3 space-y-4 hidden lg:block overflow-y-auto bg-card/20">
           <Button onClick={() => openNewMeeting()} className="w-full gap-2" size="sm">
             <Plus className="h-4 w-4" /> Nova Reunião
           </Button>
@@ -145,7 +145,7 @@ export default function ReunioesPage() {
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Próximas hoje</p>
               <div className="space-y-1.5">
                 {upcomingToday.map(r => (
-                  <div key={r.id} className="glass rounded-lg p-2 cursor-pointer hover:bg-muted/20 transition-colors" onClick={() => setSelectedReuniao(r)}>
+                  <div key={r.id} className="rounded-lg p-2 cursor-pointer hover:bg-muted/15 bg-muted/5 transition-colors" onClick={() => setSelectedReuniao(r)}>
                     <div className="flex items-center gap-1.5">
                       <div className="h-2 w-2 rounded-full" style={{ backgroundColor: r.cor }} />
                       <span className="text-[11px] font-medium truncate">{r.titulo}</span>
@@ -159,7 +159,7 @@ export default function ReunioesPage() {
         </div>
 
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-border/10">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-border/5 bg-card/20">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}><ChevronLeft className="h-4 w-4" /></Button>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(1)}><ChevronRight className="h-4 w-4" /></Button>

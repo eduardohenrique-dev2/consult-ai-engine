@@ -27,13 +27,13 @@ export function DailyCalendar({ currentDate, reunioes, onEventClick, onSlotClick
       <div className="flex">
         <div className="w-20 shrink-0">
           {HOURS.map(h => (
-            <div key={h} style={{ height: HOUR_H }} className="flex items-start justify-end pr-3 text-xs text-muted-foreground/60 -mt-2">
+            <div key={h} style={{ height: HOUR_H }} className="flex items-start justify-end pr-3 text-xs text-muted-foreground/40 -mt-2">
               {String(h).padStart(2, "0")}:00
             </div>
           ))}
         </div>
         <div
-          className="flex-1 relative border-l border-border/10"
+          className="flex-1 relative border-l border-border/5"
           onClick={e => {
             const rect = e.currentTarget.getBoundingClientRect();
             const y = e.clientY - rect.top;
@@ -45,7 +45,7 @@ export function DailyCalendar({ currentDate, reunioes, onEventClick, onSlotClick
           }}
         >
           {HOURS.map(h => (
-            <div key={h} style={{ height: HOUR_H }} className="border-b border-border/5" />
+            <div key={h} style={{ height: HOUR_H }} className="border-b border-border/[0.03]" />
           ))}
           {events.map(r => {
             const start = new Date(r.data_inicio);
@@ -60,7 +60,7 @@ export function DailyCalendar({ currentDate, reunioes, onEventClick, onSlotClick
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="absolute left-1 right-1 rounded-lg px-3 py-2 cursor-pointer hover:shadow-lg transition-shadow"
-                style={{ top: Math.max(top, 0), height: Math.max(height, 24), backgroundColor: r.cor + "cc" }}
+                style={{ top: Math.max(top, 0), height: Math.max(height, 24), backgroundColor: r.cor + "99" }}
                 onClick={e => { e.stopPropagation(); onEventClick(r); }}
               >
                 <p className="text-sm font-semibold text-white truncate">{r.titulo}</p>
