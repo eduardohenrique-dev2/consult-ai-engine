@@ -43,9 +43,9 @@ export function WeeklyCalendar({ currentDate, reunioes, onEventClick, onSlotClic
         {days.map(day => {
           const isToday = isSameDay(day, today);
           return (
-            <div key={day.toISOString()} className={`flex-1 text-center py-2 border-l border-border/10 ${isToday ? "bg-primary/5" : ""}`}>
-              <div className="text-[10px] text-muted-foreground uppercase">{format(day, "EEE", { locale: ptBR })}</div>
-              <div className={`text-lg font-semibold ${isToday ? "text-primary" : ""}`}>{format(day, "d")}</div>
+            <div key={day.toISOString()} className={`flex-1 text-center py-2 border-l border-border/5 ${isToday ? "bg-primary/[0.04]" : ""}`}>
+              <div className="text-[10px] text-muted-foreground/70 uppercase">{format(day, "EEE", { locale: ptBR })}</div>
+              <div className={`text-lg font-semibold ${isToday ? "text-primary/80" : "text-foreground/70"}`}>{format(day, "d")}</div>
             </div>
           );
         })}
@@ -56,7 +56,7 @@ export function WeeklyCalendar({ currentDate, reunioes, onEventClick, onSlotClic
         {/* Time labels */}
         <div className="w-16 shrink-0">
           {HOURS.map(h => (
-            <div key={h} style={{ height: HOUR_H }} className="flex items-start justify-end pr-2 text-[10px] text-muted-foreground/60 -mt-2">
+            <div key={h} style={{ height: HOUR_H }} className="flex items-start justify-end pr-2 text-[10px] text-muted-foreground/40 -mt-2">
               {String(h).padStart(2, "0")}:00
             </div>
           ))}
@@ -69,7 +69,7 @@ export function WeeklyCalendar({ currentDate, reunioes, onEventClick, onSlotClic
           return (
             <div
               key={day.toISOString()}
-              className={`flex-1 relative border-l border-border/10 cursor-pointer ${isToday ? "bg-primary/[0.02]" : ""}`}
+              className={`flex-1 relative border-l border-border/5 cursor-pointer ${isToday ? "bg-primary/[0.015]" : ""}`}
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const y = e.clientY - rect.top;
@@ -81,7 +81,7 @@ export function WeeklyCalendar({ currentDate, reunioes, onEventClick, onSlotClic
               }}
             >
               {HOURS.map(h => (
-                <div key={h} style={{ height: HOUR_H }} className="border-b border-border/5" />
+                <div key={h} style={{ height: HOUR_H }} className="border-b border-border/[0.03]" />
               ))}
 
               {/* Events */}
@@ -92,8 +92,8 @@ export function WeeklyCalendar({ currentDate, reunioes, onEventClick, onSlotClic
                     key={r.id}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="absolute left-0.5 right-0.5 rounded-md px-1.5 py-0.5 cursor-pointer overflow-hidden group hover:shadow-lg transition-shadow z-10"
-                    style={{ top, height, backgroundColor: r.cor + "cc", minHeight: 20 }}
+                    className="absolute left-0.5 right-0.5 rounded-md px-1.5 py-0.5 cursor-pointer overflow-hidden group hover:shadow-md transition-shadow z-10"
+                    style={{ top, height, backgroundColor: r.cor + "99", minHeight: 20 }}
                     onClick={e => { e.stopPropagation(); onEventClick(r); }}
                   >
                     <p className="text-[10px] font-semibold text-white truncate leading-tight">{r.titulo}</p>
