@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, X, Send, Bot, User, Sparkles, Minimize2 } from "lucide-react";
+import { X, Send, Bot, User, Sparkles, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useChat } from "@/hooks/useChat";
 import { useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import pmLogo from "@/assets/pm-logo.png";
 
 const pageContextMap: Record<string, string> = {
   "/": "dashboard",
@@ -60,10 +61,9 @@ export function FloatingChat() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
-            style={{ background: "var(--gradient-neon)" }}
+            className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow bg-card/80 backdrop-blur-xl border border-border/20 hover:scale-105"
           >
-            <MessageSquare className="h-6 w-6 text-white" />
+            <img src={pmLogo} alt="PM Assistant" width={40} height={40} className="rounded-full" />
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-success border-2 border-background animate-pulse" />
           </motion.button>
         )}
@@ -80,21 +80,19 @@ export function FloatingChat() {
             className="fixed bottom-6 right-6 z-50 w-[400px] h-[560px] rounded-2xl border border-border/50 bg-card shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/40" style={{ background: "var(--gradient-neon)" }}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/20 bg-card/80 backdrop-blur-xl">
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
-                  <Sparkles className="h-4 w-4 text-white" />
-                </div>
+                <img src={pmLogo} alt="PM Assistant" width={32} height={32} className="rounded-lg" />
                 <div>
-                  <p className="text-sm font-semibold text-white">PM Assistant</p>
-                  <p className="text-[10px] text-white/70">Contexto: {pageContext}</p>
+                  <p className="text-sm font-semibold text-foreground">PM Assistant</p>
+                  <p className="text-[10px] text-muted-foreground">Contexto: {pageContext}</p>
                 </div>
               </div>
               <div className="flex gap-1">
-                <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-lg hover:bg-white/20 text-white/80 hover:text-white transition-colors">
+                <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-lg hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors">
                   <Minimize2 className="h-4 w-4" />
                 </button>
-                <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-lg hover:bg-white/20 text-white/80 hover:text-white transition-colors">
+                <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-lg hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors">
                   <X className="h-4 w-4" />
                 </button>
               </div>
