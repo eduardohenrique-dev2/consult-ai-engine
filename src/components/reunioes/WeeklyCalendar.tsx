@@ -96,7 +96,7 @@ export function WeeklyCalendar({ currentDate, reunioes, onEventClick, onSlotClic
                     style={{ top, height, backgroundColor: r.cor + "99", minHeight: 20 }}
                     onClick={e => { e.stopPropagation(); onEventClick(r); }}
                   >
-                    <p className="text-[10px] font-semibold text-white truncate leading-tight">{r.titulo}</p>
+                    <p className="text-[10px] font-semibold text-white/90 truncate leading-tight">{r.titulo}</p>
                     {height > 30 && (
                       <p className="text-[9px] text-white/80 truncate">
                         {format(new Date(r.data_inicio), "HH:mm")} - {format(new Date(r.data_fim), "HH:mm")}

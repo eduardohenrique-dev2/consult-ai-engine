@@ -88,9 +88,9 @@ export function MeetingDetail({ reuniao, onClose, onEdit, onDelete, onUpdate }: 
         initial={{ x: 300, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: 300, opacity: 0 }}
-        className="w-[400px] h-full glass border-l border-border/30 flex flex-col"
+        className="w-[400px] h-full border-l border-border/10 flex flex-col bg-card/40 backdrop-blur-xl"
       >
-        <div className="flex items-center justify-between p-4 border-b border-border/20">
+        <div className="flex items-center justify-between p-4 border-b border-border/10">
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full" style={{ backgroundColor: reuniao.cor }} />
             <h3 className="font-semibold text-sm truncate max-w-[250px]">{reuniao.titulo}</h3>
