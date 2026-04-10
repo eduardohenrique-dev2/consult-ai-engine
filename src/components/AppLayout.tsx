@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { FloatingChat } from "@/components/FloatingChat";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Search } from "lucide-react";
 
 interface AppLayoutProps {
@@ -44,6 +45,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               </button>
             </div>
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <NotificationsPanel />
               <Badge variant="outline" className="text-[9px] border-border/30 text-muted-foreground/60 font-mono">
                 v3.0
