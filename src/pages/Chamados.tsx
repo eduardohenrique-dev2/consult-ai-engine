@@ -152,9 +152,27 @@ export default function Chamados() {
         </Dialog>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar chamados..." className="pl-9 bg-secondary border-border/50 focus:border-primary/50 transition-colors" />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative max-w-sm flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar chamados..." className="pl-9 bg-secondary border-border/50 focus:border-primary/50 transition-colors" />
+        </div>
+        <Button
+          size="sm"
+          variant={onlyEsocial ? "default" : "outline"}
+          onClick={() => setOnlyEsocial(v => !v)}
+          className={`h-9 text-[11px] gap-1.5 ${onlyEsocial ? "bg-warning text-warning-foreground hover:bg-warning/90" : "border-warning/40 text-warning hover:bg-warning/10"}`}
+        >
+          <FileWarning className="h-3.5 w-3.5" /> Somente eSocial
+        </Button>
+        <Button
+          size="sm"
+          variant={onlyCritica ? "default" : "outline"}
+          onClick={() => setOnlyCritica(v => !v)}
+          className={`h-9 text-[11px] gap-1.5 ${onlyCritica ? "bg-critical text-white hover:bg-critical/90" : "border-critical/40 text-critical hover:bg-critical/10"}`}
+        >
+          <AlertTriangle className="h-3.5 w-3.5" /> Somente críticos
+        </Button>
       </div>
 
       <div className="grid grid-cols-5 gap-4 min-h-[70vh]">
@@ -170,23 +188,50 @@ export default function Chamados() {
               </div>
               <div className="space-y-2.5 flex-1 overflow-auto scrollbar-thin">
                 <AnimatePresence>
-                  {items.map((chamado: any) => (
-                    <motion.div key={chamado.id} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-                      draggable onDragStart={() => setDraggedId(chamado.id)} onClick={() => setSelectedChamado(chamado)}
-                      className="card-gradient rounded-xl border border-border/40 p-3.5 cursor-pointer hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 group">
-                      <p className="text-xs font-medium mb-2.5 leading-snug group-hover:text-primary transition-colors">{chamado.titulo}</p>
-                      <div className="flex flex-wrap gap-1.5 mb-2">
-                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium ${tipoColors[chamado.tipo] || ""}`}>{chamado.tipo}</span>
-                        <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${prioridadeColors[chamado.prioridade] || ""}`}>{chamado.prioridade}</span>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground">{chamado.clientes?.nome?.split(" ")[0] || "—"}</span>
-                      {chamado.sugestao_ia && (
-                        <div className="mt-2.5 flex items-center gap-1 text-[9px] text-neon-purple font-medium">
-                          <Sparkles className="h-3 w-3" /> IA disponível
+                  {items.map((chamado: any) => {
+                    const isCritica = chamado.prioridade === "critica";
+                    const isEsocial = chamado.eh_esocial === true || chamado.tipo === "eSocial";
+                    return (
+                      <motion.div
+                        key={chamado.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        draggable
+                        onDragStart={() => setDraggedId(chamado.id)}
+                        onClick={() => setSelectedChamado(chamado)}
+                        className={`card-gradient rounded-xl border p-3.5 cursor-pointer transition-all duration-200 group ${
+                          isCritica
+                            ? "border-critical/60 shadow-lg shadow-critical/20 ring-1 ring-critical/30 animate-pulse-soft hover:border-critical hover:shadow-critical/30"
+                            : "border-border/40 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+                        }`}
+                      >
+                        {isCritica && (
+                          <div className="flex items-center gap-1 text-[9px] text-critical font-bold uppercase tracking-wider mb-1.5">
+                            <AlertTriangle className="h-3 w-3" /> Crítico
+                          </div>
+                        )}
+                        <p className="text-xs font-medium mb-2.5 leading-snug group-hover:text-primary transition-colors">{chamado.titulo}</p>
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium ${tipoColors[chamado.tipo] || ""}`}>{chamado.tipo}</span>
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${prioridadeColors[chamado.prioridade] || ""}`}>{chamado.prioridade}</span>
+                          {isEsocial && (
+                            <span className="text-[9px] px-2 py-0.5 rounded-full font-medium bg-warning/15 text-warning border border-warning/30 flex items-center gap-1">
+                              <FileWarning className="h-2.5 w-2.5" />
+                              {chamado.evento_esocial || "eSocial"}
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </motion.div>
-                  ))}
+                        <span className="text-[10px] text-muted-foreground">{chamado.clientes?.nome?.split(" ")[0] || "—"}</span>
+                        {chamado.sugestao_ia && (
+                          <div className="mt-2.5 flex items-center gap-1 text-[9px] text-neon-purple font-medium">
+                            <Sparkles className="h-3 w-3" /> IA disponível
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </div>
             </div>
