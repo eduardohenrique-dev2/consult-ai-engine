@@ -19,12 +19,24 @@ const tipoConfig: Record<string, any> = {
   Documentação: { icon: BookOpen, color: "text-neon-purple bg-neon-purple/10 border-neon-purple/20" },
 };
 
+const CATEGORIAS = ["Folha", "eSocial", "Financeiro", "Ponto", "Benefícios", "Geral"] as const;
+
+const categoriaColors: Record<string, string> = {
+  Folha: "bg-primary/10 text-primary border-primary/30",
+  eSocial: "bg-warning/10 text-warning border-warning/30",
+  Financeiro: "bg-success/10 text-success border-success/30",
+  Ponto: "bg-accent/10 text-accent border-accent/30",
+  "Benefícios": "bg-neon-purple/10 text-neon-purple border-neon-purple/30",
+  Geral: "bg-muted text-muted-foreground border-border/40",
+};
+
 export default function BaseConhecimentoPage() {
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [showCreate, setShowCreate] = useState(false);
   const [filterType, setFilterType] = useState("all");
+  const [filterCategoria, setFilterCategoria] = useState<string>("all");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -40,12 +52,22 @@ export default function BaseConhecimentoPage() {
     .filter((bc: any) =>
       (bc.titulo.toLowerCase().includes(search.toLowerCase()) ||
        bc.conteudo.toLowerCase().includes(search.toLowerCase())) &&
-      (filterType === "all" || bc.tipo === filterType)
+      (filterType === "all" || bc.tipo === filterType) &&
+      (filterCategoria === "all" || (bc.categoria || "Geral") === filterCategoria)
     )
     .sort((a: any, b: any) => {
-      const aFav = favorites.has(a.id) ? -1 : 0;
-      const bFav = favorites.has(b.id) ? -1 : 0;
-      return aFav - bFav;
+      // Favoritos primeiro
+      const aFav = favorites.has(a.id) ? -2 : 0;
+      const bFav = favorites.has(b.id) ? -2 : 0;
+      if (aFav !== bFav) return aFav - bFav;
+      // Match exato no título tem prioridade
+      const q = search.toLowerCase();
+      if (q) {
+        const aMatch = a.titulo.toLowerCase().includes(q) ? -1 : 0;
+        const bMatch = b.titulo.toLowerCase().includes(q) ? -1 : 0;
+        return aMatch - bMatch;
+      }
+      return 0;
     });
 
   const toggleFavorite = (id: string) => {
