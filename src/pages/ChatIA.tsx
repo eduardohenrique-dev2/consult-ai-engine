@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, Database, Bot, User, Copy, Check, Plus, MessageSquare, Trash2 } from "lucide-react";
+import { Send, Sparkles, Database, Bot, User, Copy, Check, Plus, MessageSquare, Trash2, Code2, AlertTriangle, Lightbulb, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,14 @@ const queryShortcuts = [
   { nome: "Sem benefício", prompt: "Gere a query para funcionários sem benefício" },
   { nome: "Divergência benefício", prompt: "Gere a query para divergência de benefícios" },
   { nome: "Sem cálculo folha", prompt: "Gere a query para funcionários sem cálculo de folha" },
+  { nome: "eSocial S-1200", prompt: "Explique o evento S-1200 e como reenviar pelo Monitor eSocial" },
+  { nome: "eSocial S-1210", prompt: "Explique o evento S-1210 e principais erros de pagamento" },
+];
+
+const intentChips = [
+  { label: "Gerar SQL", prefix: "[GERAR SQL]", icon: Code2, color: "text-accent border-accent/40 hover:bg-accent/10" },
+  { label: "Explicar erro", prefix: "[EXPLICAR ERRO]", icon: AlertTriangle, color: "text-warning border-warning/40 hover:bg-warning/10" },
+  { label: "Sugerir solução", prefix: "[SUGERIR SOLUÇÃO]", icon: Lightbulb, color: "text-neon-purple border-neon-purple/40 hover:bg-neon-purple/10" },
 ];
 
 export default function ChatIA() {
