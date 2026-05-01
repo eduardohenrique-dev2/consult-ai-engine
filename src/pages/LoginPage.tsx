@@ -10,9 +10,10 @@ import logoPm from "@/assets/logo-pm.png";
 import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
-  const { user, loading, signIn, signUp } = useAuth();
+  const { user, loading, signIn, signUp, resetPassword } = useAuth();
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
+  const [forgotMode, setForgotMode] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
@@ -33,7 +34,15 @@ export default function LoginPage() {
     e.preventDefault();
     setSubmitting(true);
 
-    if (isLogin) {
+    if (forgotMode) {
+      const { error } = await resetPassword(email);
+      if (error) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "📧 Email enviado!", description: "Verifique sua caixa de entrada para redefinir a senha." });
+        setForgotMode(false);
+      }
+    } else if (isLogin) {
       const { error } = await signIn(email, password);
       if (error) {
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
