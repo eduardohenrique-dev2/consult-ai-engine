@@ -39,6 +39,28 @@ REGRAS:
 - Se não houver query relevante, omita a seção SQL
 `;
 
+// Detecta categoria pela pergunta (Folha, eSocial, Financeiro, Ponto, Benefícios)
+function detectCategoria(q: string): string[] {
+  const text = q.toLowerCase();
+  const cats: string[] = [];
+  if (/(esocial|s-1[02]\d{2}|s-2[02]\d{2}|s-3000|evento s-)/i.test(text)) cats.push("eSocial");
+  if (/(folha|fopag|holerite|pfunc|pffinanc|prubrica|cálculo de folha|calculo de folha|rescis[aã]o|f[eé]rias|13[ºo°])/i.test(text)) cats.push("Folha");
+  if (/(ponto|batida|hor[aá]rio|jornada|afd|afdt|banco de horas|ppont)/i.test(text)) cats.push("Ponto");
+  if (/(benef[ií]cio|vale|vt|vr|va|plano de sa[uú]de|pbenef)/i.test(text)) cats.push("Benefícios");
+  if (/(financeiro|conta cont[aá]bil|contabil|lan[cç]amento|fluxo de caixa)/i.test(text)) cats.push("Financeiro");
+  if (cats.length === 0) cats.push("Geral");
+  return cats;
+}
+
+// Detecta intenção do botão rápido / pergunta
+function detectIntent(q: string): "sql" | "erro" | "solucao" | "geral" {
+  const t = q.toLowerCase();
+  if (/^\[gerar sql\]|gere (a |uma )?query|gerar sql|sql para|select .* from/i.test(t)) return "sql";
+  if (/^\[explicar erro\]|explicar erro|por que.*erro|o que (significa|é) o erro|c[óo]digo de erro|err[oó]/i.test(t)) return "erro";
+  if (/^\[sugerir solu[cç][aã]o\]|como resolver|solu[cç][aã]o para|como corrigir|passo a passo/i.test(t)) return "solucao";
+  return "geral";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -54,34 +76,61 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const lastUserMessage = [...messages].reverse().find((m: any) => m.role === "user")?.content || "";
+    const categorias = detectCategoria(lastUserMessage);
+    const intent = detectIntent(lastUserMessage);
 
-    // RAG: Search base_conhecimento
+    // RAG: prioriza por categoria detectada + termos
     const searchTerms = lastUserMessage
       .toLowerCase()
+      .replace(/\[(gerar sql|explicar erro|sugerir solu[cç][aã]o)\]/gi, "")
       .split(/\s+/)
       .filter((t: string) => t.length > 3)
-      .slice(0, 5);
+      .slice(0, 6);
 
     let ragContext = "";
+    let knowledgeResults: any[] = [];
+
+    // 1) Buscar primeiro itens da(s) categoria(s) detectada(s)
+    if (categorias.length && !categorias.includes("Geral")) {
+      const { data } = await supabase
+        .from("base_conhecimento")
+        .select("titulo, conteudo, tipo, categoria")
+        .in("categoria", categorias)
+        .limit(8);
+      if (data) knowledgeResults = data;
+    }
+
+    // 2) Reforça com busca textual
     if (searchTerms.length > 0) {
       const orConditions = searchTerms
         .map((term: string) => `titulo.ilike.%${term}%,conteudo.ilike.%${term}%`)
         .join(",");
-
-      const { data: knowledgeResults } = await supabase
+      const { data } = await supabase
         .from("base_conhecimento")
-        .select("titulo, conteudo, tipo")
+        .select("titulo, conteudo, tipo, categoria")
         .or(orConditions)
-        .limit(5);
-
-      if (knowledgeResults && knowledgeResults.length > 0) {
-        ragContext = "\n\n--- BASE DE CONHECIMENTO INTERNA (RAG) ---\n" +
-          knowledgeResults.map((r: any) => `[${r.tipo}] ${r.titulo}:\n${r.conteudo}`).join("\n\n") +
-          "\n--- FIM DA BASE DE CONHECIMENTO ---\n";
+        .limit(8);
+      if (data) {
+        // dedupe by titulo
+        const seen = new Set(knowledgeResults.map((r) => r.titulo));
+        for (const r of data) {
+          if (!seen.has(r.titulo)) {
+            knowledgeResults.push(r);
+            seen.add(r.titulo);
+          }
+        }
       }
     }
 
-    // Fetch chamado history if chamadoId provided
+    knowledgeResults = knowledgeResults.slice(0, 6);
+
+    if (knowledgeResults.length > 0) {
+      ragContext = "\n\n--- BASE DE CONHECIMENTO INTERNA (RAG) ---\n" +
+        knowledgeResults.map((r: any) => `[${r.categoria || r.tipo}] ${r.titulo}:\n${r.conteudo}`).join("\n\n") +
+        "\n--- FIM DA BASE DE CONHECIMENTO ---\n";
+    }
+
+    // Histórico do chamado
     let chamadoHistory = "";
     if (chamadoId) {
       const { data: interactions } = await supabase
@@ -99,19 +148,18 @@ serve(async (req) => {
       }
     }
 
-    // Fetch contextual data based on page
+    // Contexto por página
     let contextualData = "";
-    
     if (pageContext === "chamados" || pageContext === "chat") {
       const { data: recentChamados } = await supabase
         .from("chamados")
-        .select("titulo, tipo, status, prioridade, sugestao_ia, descricao")
+        .select("titulo, tipo, status, prioridade, eh_esocial, evento_esocial, descricao")
         .order("created_at", { ascending: false })
         .limit(10);
 
       if (recentChamados?.length) {
         contextualData += "\n\n--- CHAMADOS RECENTES ---\n" +
-          recentChamados.map((c: any) => `- ${c.titulo} (${c.tipo}, ${c.status}, prioridade: ${c.prioridade})${c.descricao ? ` - ${c.descricao}` : ""}`).join("\n") +
+          recentChamados.map((c: any) => `- ${c.titulo} (${c.tipo}${c.eh_esocial ? `/eSocial${c.evento_esocial ? " " + c.evento_esocial : ""}` : ""}, ${c.status}, prioridade: ${c.prioridade})${c.descricao ? ` - ${c.descricao}` : ""}`).join("\n") +
           "\n--- FIM ---\n";
       }
     }
@@ -121,7 +169,6 @@ serve(async (req) => {
         .from("clientes")
         .select("nome, status, problemas, cnpj")
         .limit(20);
-
       if (clientes?.length) {
         contextualData += "\n\n--- CLIENTES ---\n" +
           clientes.map((c: any) => `- ${c.nome} (${c.status})${c.problemas?.length ? ` Problemas: ${c.problemas.join(", ")}` : ""}`).join("\n") +
@@ -149,28 +196,43 @@ serve(async (req) => {
       configuracoes: "O usuário está em Configurações. Ajude com configuração do sistema.",
       chat: "O usuário está no Chat IA dedicado. Responda qualquer pergunta sobre TOTVS RM.",
     };
-
     const pageInstruction = pageInstructions[pageContext || "chat"] || pageInstructions.chat;
 
-    const systemPrompt = `Você é o PM Intelligence Assistant, copiloto operacional da Pereira Marques Consultoria, especialista em TOTVS RM.
+    const intentInstruction =
+      intent === "sql"
+        ? "INTENÇÃO: gerar QUERY SQL para Oracle TOTVS RM. Foque em: SELECT pronto para uso, com JOINs corretos (PFUNC, PFFINANC, PRUBRICAS, PBENEFICIO, PSECAO, etc.), filtros úteis (CODCOLIGADA, DATAADMISSAO, CODSITUACAO) e comentários curtos. Sempre entregue a query funcional na seção '💻 QUERY SQL'."
+        : intent === "erro"
+        ? "INTENÇÃO: EXPLICAR ERRO. Identifique código/mensagem (ex: S-1200, ORA-XXXXX), explique a causa em 2-3 itens e dê passo a passo de correção."
+        : intent === "solucao"
+        ? "INTENÇÃO: SUGERIR SOLUÇÃO PRÁTICA. Vá direto ao ponto: passo a passo numerado, comandos exatos, validações."
+        : "";
+
+    const esocialBoost = categorias.includes("eSocial")
+      ? "\nFoco eSocial: explique evento envolvido (S-1200/S-1210/S-2200 etc.), regra de negócio e como corrigir no RM (Folha → eSocial → Monitor)."
+      : "";
+
+    const systemPrompt = `Você é o PM Intelligence Assistant, copiloto operacional da Pereira Marques Consultoria, especialista em TOTVS RM e eSocial.
 
 ${pageInstruction}
 
+Categorias detectadas na pergunta: ${categorias.join(", ")}.
+${intentInstruction}${esocialBoost}
+
 Suas capacidades:
-1. Responder sobre TOTVS RM (Folha, Ponto, Benefícios, eSocial)
-2. Gerar queries SQL para Oracle RM (PFUNC, PFFINANC, PBENEFICIO, PRUBRICAS, etc.)
-3. Diagnosticar erros comuns
-4. Sugerir soluções baseadas na base de conhecimento interna
-5. Analisar dados do sistema (chamados, clientes, métricas)
+1. TOTVS RM (Folha, Ponto, Benefícios, Financeiro)
+2. eSocial (eventos S-1200, S-1210, S-2200, S-2299, S-2230, S-3000)
+3. Queries SQL Oracle RM (PFUNC, PFFINANC, PBENEFICIO, PRUBRICAS, PSECAO, PFHSTSAL)
+4. Diagnóstico de erros comuns
+5. Análise de chamados e clientes do sistema
 
 ${STANDARDIZED_FORMAT}
 
-- Priorize informações da base de conhecimento (RAG) quando disponível
+- PRIORIZE a base de conhecimento (RAG) abaixo quando houver match
+- Reaproveite trechos da base quando aplicável
 - Responda em português brasileiro
 
 ${ragContext}${chamadoHistory}${contextualData}`;
 
-    // Save user message to DB if conversationId provided
     if (conversationId) {
       await supabase.from("chat_messages").insert({
         conversation_id: conversationId,

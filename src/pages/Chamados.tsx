@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Sparkles, Loader2, MessageSquare, Send, History, Pencil, Trash2, Save, X } from "lucide-react";
+import { Plus, Search, Sparkles, Loader2, MessageSquare, Send, History, Pencil, Trash2, Save, X, AlertTriangle, FileWarning } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,6 +56,8 @@ export default function Chamados() {
   const [selectedChamado, setSelectedChamado] = useState<any | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [onlyEsocial, setOnlyEsocial] = useState(false);
+  const [onlyCritica, setOnlyCritica] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -112,10 +115,13 @@ export default function Chamados() {
     },
   });
 
-  const filtered = chamados.filter((c: any) =>
-    c.titulo.toLowerCase().includes(search.toLowerCase()) ||
-    (c.clientes?.nome || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = chamados.filter((c: any) => {
+    const matchesSearch = c.titulo.toLowerCase().includes(search.toLowerCase()) ||
+      (c.clientes?.nome || "").toLowerCase().includes(search.toLowerCase());
+    const matchesEsocial = !onlyEsocial || c.eh_esocial === true || c.tipo === "eSocial";
+    const matchesCritica = !onlyCritica || c.prioridade === "critica";
+    return matchesSearch && matchesEsocial && matchesCritica;
+  });
 
   const handleDrop = (newStatus: ChamadoStatus) => {
     if (!draggedId) return;
@@ -146,9 +152,27 @@ export default function Chamados() {
         </Dialog>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar chamados..." className="pl-9 bg-secondary border-border/50 focus:border-primary/50 transition-colors" />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative max-w-sm flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar chamados..." className="pl-9 bg-secondary border-border/50 focus:border-primary/50 transition-colors" />
+        </div>
+        <Button
+          size="sm"
+          variant={onlyEsocial ? "default" : "outline"}
+          onClick={() => setOnlyEsocial(v => !v)}
+          className={`h-9 text-[11px] gap-1.5 ${onlyEsocial ? "bg-warning text-warning-foreground hover:bg-warning/90" : "border-warning/40 text-warning hover:bg-warning/10"}`}
+        >
+          <FileWarning className="h-3.5 w-3.5" /> Somente eSocial
+        </Button>
+        <Button
+          size="sm"
+          variant={onlyCritica ? "default" : "outline"}
+          onClick={() => setOnlyCritica(v => !v)}
+          className={`h-9 text-[11px] gap-1.5 ${onlyCritica ? "bg-critical text-white hover:bg-critical/90" : "border-critical/40 text-critical hover:bg-critical/10"}`}
+        >
+          <AlertTriangle className="h-3.5 w-3.5" /> Somente críticos
+        </Button>
       </div>
 
       <div className="grid grid-cols-5 gap-4 min-h-[70vh]">
@@ -164,23 +188,50 @@ export default function Chamados() {
               </div>
               <div className="space-y-2.5 flex-1 overflow-auto scrollbar-thin">
                 <AnimatePresence>
-                  {items.map((chamado: any) => (
-                    <motion.div key={chamado.id} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-                      draggable onDragStart={() => setDraggedId(chamado.id)} onClick={() => setSelectedChamado(chamado)}
-                      className="card-gradient rounded-xl border border-border/40 p-3.5 cursor-pointer hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 group">
-                      <p className="text-xs font-medium mb-2.5 leading-snug group-hover:text-primary transition-colors">{chamado.titulo}</p>
-                      <div className="flex flex-wrap gap-1.5 mb-2">
-                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium ${tipoColors[chamado.tipo] || ""}`}>{chamado.tipo}</span>
-                        <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${prioridadeColors[chamado.prioridade] || ""}`}>{chamado.prioridade}</span>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground">{chamado.clientes?.nome?.split(" ")[0] || "—"}</span>
-                      {chamado.sugestao_ia && (
-                        <div className="mt-2.5 flex items-center gap-1 text-[9px] text-neon-purple font-medium">
-                          <Sparkles className="h-3 w-3" /> IA disponível
+                  {items.map((chamado: any) => {
+                    const isCritica = chamado.prioridade === "critica";
+                    const isEsocial = chamado.eh_esocial === true || chamado.tipo === "eSocial";
+                    return (
+                      <motion.div
+                        key={chamado.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        draggable
+                        onDragStart={() => setDraggedId(chamado.id)}
+                        onClick={() => setSelectedChamado(chamado)}
+                        className={`card-gradient rounded-xl border p-3.5 cursor-pointer transition-all duration-200 group ${
+                          isCritica
+                            ? "border-critical/60 shadow-lg shadow-critical/20 ring-1 ring-critical/30 animate-pulse-soft hover:border-critical hover:shadow-critical/30"
+                            : "border-border/40 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+                        }`}
+                      >
+                        {isCritica && (
+                          <div className="flex items-center gap-1 text-[9px] text-critical font-bold uppercase tracking-wider mb-1.5">
+                            <AlertTriangle className="h-3 w-3" /> Crítico
+                          </div>
+                        )}
+                        <p className="text-xs font-medium mb-2.5 leading-snug group-hover:text-primary transition-colors">{chamado.titulo}</p>
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium ${tipoColors[chamado.tipo] || ""}`}>{chamado.tipo}</span>
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${prioridadeColors[chamado.prioridade] || ""}`}>{chamado.prioridade}</span>
+                          {isEsocial && (
+                            <span className="text-[9px] px-2 py-0.5 rounded-full font-medium bg-warning/15 text-warning border border-warning/30 flex items-center gap-1">
+                              <FileWarning className="h-2.5 w-2.5" />
+                              {chamado.evento_esocial || "eSocial"}
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </motion.div>
-                  ))}
+                        <span className="text-[10px] text-muted-foreground">{chamado.clientes?.nome?.split(" ")[0] || "—"}</span>
+                        {chamado.sugestao_ia && (
+                          <div className="mt-2.5 flex items-center gap-1 text-[9px] text-neon-purple font-medium">
+                            <Sparkles className="h-3 w-3" /> IA disponível
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </div>
             </div>
@@ -466,8 +517,34 @@ function ChamadoDetail({ chamado, clientes, onDelete, onUpdated }: { chamado: an
         </TabsContent>
 
         <TabsContent value="ia" className="space-y-4 mt-4">
-          <div className="rounded-xl border border-border/30 bg-secondary/30 p-4">
-            <p className="text-xs text-muted-foreground mb-3">Faça perguntas sobre este chamado. A IA usará o contexto e histórico para responder.</p>
+          <div className="rounded-xl border border-border/30 bg-secondary/30 p-4 space-y-3">
+            <p className="text-xs text-muted-foreground">Faça perguntas sobre este chamado. A IA usará o contexto, histórico e a base de conhecimento.</p>
+            <div className="flex flex-wrap gap-1.5">
+              <Button
+                size="sm" variant="outline"
+                disabled={asking}
+                onClick={() => { setQuestion(`[SUGERIR SOLUÇÃO] Sugira a melhor solução para este chamado: ${chamado.titulo}`); setTimeout(handleAskAI, 50); }}
+                className="h-7 text-[10px] gap-1 border-neon-purple/40 text-neon-purple hover:bg-neon-purple/10"
+              >
+                <Sparkles className="h-3 w-3" /> Sugerir resposta
+              </Button>
+              <Button
+                size="sm" variant="outline"
+                disabled={asking}
+                onClick={() => setQuestion(`[GERAR SQL] Gere a query SQL para investigar: ${chamado.titulo}`)}
+                className="h-7 text-[10px] gap-1 border-accent/40 text-accent hover:bg-accent/10"
+              >
+                <MessageSquare className="h-3 w-3" /> Gerar SQL
+              </Button>
+              <Button
+                size="sm" variant="outline"
+                disabled={asking}
+                onClick={() => setQuestion(`[EXPLICAR ERRO] Explique o erro reportado: ${chamado.descricao || chamado.titulo}`)}
+                className="h-7 text-[10px] gap-1 border-warning/40 text-warning hover:bg-warning/10"
+              >
+                <X className="h-3 w-3" /> Explicar erro
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Input
                 value={question}
@@ -538,11 +615,15 @@ function ChamadoDetail({ chamado, clientes, onDelete, onUpdated }: { chamado: an
 
 function CreateChamadoForm({ clientes, onClose, onSuccess }: { clientes: any[]; onClose: () => void; onSuccess: () => void }) {
   const { user } = useAuth();
-  const [form, setForm] = useState({ titulo: "", descricao: "", tipo: "Folha", prioridade: "", clienteId: "" });
+  const [form, setForm] = useState({
+    titulo: "", descricao: "", tipo: "Folha", prioridade: "", clienteId: "",
+    eh_esocial: false, evento_esocial: "",
+  });
   const [submitting, setSubmitting] = useState(false);
 
   const suggestedPriority = autoClassifyPriority(form.tipo, form.descricao);
   const effectivePriority = form.prioridade || suggestedPriority;
+  const isEsocialTipo = form.tipo === "eSocial";
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -554,7 +635,9 @@ function CreateChamadoForm({ clientes, onClose, onSuccess }: { clientes: any[]; 
       cliente_id: form.clienteId || null,
       responsavel_id: user?.id,
       status: "Novo",
-    });
+      eh_esocial: form.eh_esocial || isEsocialTipo,
+      evento_esocial: form.evento_esocial || null,
+    } as any);
     setSubmitting(false);
     if (error) return;
     onSuccess();
@@ -592,6 +675,32 @@ function CreateChamadoForm({ clientes, onClose, onSuccess }: { clientes: any[]; 
           <SelectContent>{clientes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
         </Select>
       </div>
+
+      {/* eSocial */}
+      <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-3">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <Checkbox
+            checked={form.eh_esocial || isEsocialTipo}
+            disabled={isEsocialTipo}
+            onCheckedChange={(v) => setForm({ ...form, eh_esocial: !!v })}
+          />
+          <span className="text-xs font-medium flex items-center gap-1.5">
+            <FileWarning className="h-3.5 w-3.5 text-warning" /> Relacionado ao eSocial
+          </span>
+        </label>
+        {(form.eh_esocial || isEsocialTipo) && (
+          <div>
+            <Label className="text-[10px] text-muted-foreground">Evento eSocial (opcional)</Label>
+            <Input
+              value={form.evento_esocial}
+              onChange={e => setForm({ ...form, evento_esocial: e.target.value.toUpperCase() })}
+              className="bg-background border-border/50 mt-1 h-8 text-xs"
+              placeholder="Ex: S-1200, S-1210, S-2200"
+            />
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-3 justify-end pt-2">
         <Button variant="outline" onClick={onClose} className="border-border/50">Cancelar</Button>
         <Button onClick={handleSubmit} disabled={!form.titulo || submitting} className="gap-2 shadow-lg shadow-primary/20">

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, Database, Bot, User, Copy, Check, Plus, MessageSquare, Trash2 } from "lucide-react";
+import { Send, Sparkles, Database, Bot, User, Copy, Check, Plus, MessageSquare, Trash2, Code2, AlertTriangle, Lightbulb, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,14 @@ const queryShortcuts = [
   { nome: "Sem benefício", prompt: "Gere a query para funcionários sem benefício" },
   { nome: "Divergência benefício", prompt: "Gere a query para divergência de benefícios" },
   { nome: "Sem cálculo folha", prompt: "Gere a query para funcionários sem cálculo de folha" },
+  { nome: "eSocial S-1200", prompt: "Explique o evento S-1200 e como reenviar pelo Monitor eSocial" },
+  { nome: "eSocial S-1210", prompt: "Explique o evento S-1210 e principais erros de pagamento" },
+];
+
+const intentChips = [
+  { label: "Gerar SQL", prefix: "[GERAR SQL]", icon: Code2, color: "text-accent border-accent/40 hover:bg-accent/10" },
+  { label: "Explicar erro", prefix: "[EXPLICAR ERRO]", icon: AlertTriangle, color: "text-warning border-warning/40 hover:bg-warning/10" },
+  { label: "Sugerir solução", prefix: "[SUGERIR SOLUÇÃO]", icon: Lightbulb, color: "text-neon-purple border-neon-purple/40 hover:bg-neon-purple/10" },
 ];
 
 export default function ChatIA() {
@@ -189,19 +197,37 @@ export default function ChatIA() {
               <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
                 <Bot className="h-4 w-4 text-primary animate-pulse" />
               </div>
-              <div className="card-gradient rounded-xl border border-border/40 px-4 py-3">
-                <div className="flex gap-1">
-                  <span className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
-                </div>
+              <div className="card-gradient rounded-xl border border-border/40 px-4 py-3 flex items-center gap-2">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                <span className="text-[11px] text-muted-foreground">Consultando base de conhecimento e gerando resposta...</span>
               </div>
             </motion.div>
           )}
         </div>
 
+        {/* Intent chips (Gerar SQL / Explicar erro / Sugerir solução) */}
+        <div className="flex gap-2 mt-3 flex-wrap">
+          {intentChips.map(chip => {
+            const Icon = chip.icon;
+            const apply = () => {
+              const base = input.trim();
+              setInput(`${chip.prefix} ${base}`.trim() + " ");
+            };
+            return (
+              <button
+                key={chip.label}
+                onClick={apply}
+                disabled={isTyping}
+                className={`flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-full border bg-card/40 transition-all disabled:opacity-50 ${chip.color}`}
+              >
+                <Icon className="h-3 w-3" /> {chip.label}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Quick queries */}
-        <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-thin pb-1">
+        <div className="flex gap-2 mt-2 overflow-x-auto scrollbar-thin pb-1">
           {queryShortcuts.map(q => (
             <button
               key={q.nome}
@@ -224,7 +250,7 @@ export default function ChatIA() {
             rows={1}
           />
           <Button onClick={() => handleSend(input)} disabled={!input.trim() || isTyping} className="shrink-0 h-auto">
-            <Send className="h-4 w-4" />
+            {isTyping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </div>

@@ -10,9 +10,10 @@ import logoPm from "@/assets/logo-pm.png";
 import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
-  const { user, loading, signIn, signUp } = useAuth();
+  const { user, loading, signIn, signUp, resetPassword } = useAuth();
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
+  const [forgotMode, setForgotMode] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
@@ -33,7 +34,15 @@ export default function LoginPage() {
     e.preventDefault();
     setSubmitting(true);
 
-    if (isLogin) {
+    if (forgotMode) {
+      const { error } = await resetPassword(email);
+      if (error) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "📧 Email enviado!", description: "Verifique sua caixa de entrada para redefinir a senha." });
+        setForgotMode(false);
+      }
+    } else if (isLogin) {
       const { error } = await signIn(email, password);
       if (error) {
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
@@ -72,23 +81,31 @@ export default function LoginPage() {
           </div>
 
           {/* Toggle */}
-          <div className="flex rounded-lg bg-secondary p-1 mb-6">
-            <button
-              onClick={() => setIsLogin(true)}
-              className={`flex-1 text-xs font-medium py-2 rounded-md transition-all ${isLogin ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Entrar
-            </button>
-            <button
-              onClick={() => setIsLogin(false)}
-              className={`flex-1 text-xs font-medium py-2 rounded-md transition-all ${!isLogin ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Cadastrar
-            </button>
-          </div>
+          {!forgotMode && (
+            <div className="flex rounded-lg bg-secondary p-1 mb-6">
+              <button
+                onClick={() => setIsLogin(true)}
+                className={`flex-1 text-xs font-medium py-2 rounded-md transition-all ${isLogin ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Entrar
+              </button>
+              <button
+                onClick={() => setIsLogin(false)}
+                className={`flex-1 text-xs font-medium py-2 rounded-md transition-all ${!isLogin ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Cadastrar
+              </button>
+            </div>
+          )}
+
+          {forgotMode && (
+            <div className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="text-xs text-muted-foreground">Informe seu email cadastrado. Enviaremos um link para você redefinir sua senha.</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
+            {!isLogin && !forgotMode && (
               <div>
                 <Label className="text-xs text-muted-foreground">Nome</Label>
                 <Input
@@ -111,35 +128,55 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Senha</Label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="bg-secondary border-border/50 mt-1 pr-10"
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+            {!forgotMode && (
+              <div>
+                <Label className="text-xs text-muted-foreground">Senha</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="bg-secondary border-border/50 mt-1 pr-10"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {isLogin && (
+                  <button
+                    type="button"
+                    onClick={() => setForgotMode(true)}
+                    className="text-[10px] text-primary hover:underline mt-2"
+                  >
+                    Esqueci minha senha
+                  </button>
+                )}
               </div>
-            </div>
+            )}
 
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={submitting}>
               {submitting ? (
                 <span className="flex items-center gap-2"><span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> Aguarde...</span>
               ) : (
-                <span className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> {isLogin ? "Entrar" : "Criar conta"}</span>
+                <span className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> {forgotMode ? "Enviar email" : isLogin ? "Entrar" : "Criar conta"}</span>
               )}
             </Button>
+            {forgotMode && (
+              <button
+                type="button"
+                onClick={() => setForgotMode(false)}
+                className="w-full text-[10px] text-muted-foreground hover:text-foreground mt-2"
+              >
+                ← Voltar ao login
+              </button>
+            )}
           </form>
 
           <p className="text-center text-[10px] text-muted-foreground mt-6">
