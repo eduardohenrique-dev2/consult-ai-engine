@@ -517,8 +517,34 @@ function ChamadoDetail({ chamado, clientes, onDelete, onUpdated }: { chamado: an
         </TabsContent>
 
         <TabsContent value="ia" className="space-y-4 mt-4">
-          <div className="rounded-xl border border-border/30 bg-secondary/30 p-4">
-            <p className="text-xs text-muted-foreground mb-3">Faça perguntas sobre este chamado. A IA usará o contexto e histórico para responder.</p>
+          <div className="rounded-xl border border-border/30 bg-secondary/30 p-4 space-y-3">
+            <p className="text-xs text-muted-foreground">Faça perguntas sobre este chamado. A IA usará o contexto, histórico e a base de conhecimento.</p>
+            <div className="flex flex-wrap gap-1.5">
+              <Button
+                size="sm" variant="outline"
+                disabled={asking}
+                onClick={() => { setQuestion(`[SUGERIR SOLUÇÃO] Sugira a melhor solução para este chamado: ${chamado.titulo}`); setTimeout(handleAskAI, 50); }}
+                className="h-7 text-[10px] gap-1 border-neon-purple/40 text-neon-purple hover:bg-neon-purple/10"
+              >
+                <Sparkles className="h-3 w-3" /> Sugerir resposta
+              </Button>
+              <Button
+                size="sm" variant="outline"
+                disabled={asking}
+                onClick={() => setQuestion(`[GERAR SQL] Gere a query SQL para investigar: ${chamado.titulo}`)}
+                className="h-7 text-[10px] gap-1 border-accent/40 text-accent hover:bg-accent/10"
+              >
+                <MessageSquare className="h-3 w-3" /> Gerar SQL
+              </Button>
+              <Button
+                size="sm" variant="outline"
+                disabled={asking}
+                onClick={() => setQuestion(`[EXPLICAR ERRO] Explique o erro reportado: ${chamado.descricao || chamado.titulo}`)}
+                className="h-7 text-[10px] gap-1 border-warning/40 text-warning hover:bg-warning/10"
+              >
+                <X className="h-3 w-3" /> Explicar erro
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Input
                 value={question}
