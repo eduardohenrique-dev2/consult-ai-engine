@@ -174,7 +174,7 @@ export default function BaseConhecimentoPage() {
 }
 
 function CreateArticleForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
-  const [form, setForm] = useState({ titulo: "", conteudo: "", tipo: "SQL" });
+  const [form, setForm] = useState({ titulo: "", conteudo: "", tipo: "SQL", categoria: "Geral" });
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async () => {
@@ -188,12 +188,21 @@ function CreateArticleForm({ onSuccess, onCancel }: { onSuccess: () => void; onC
   return (
     <div className="space-y-4">
       <div><Label className="text-xs">Título</Label><Input value={form.titulo} onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} className="bg-secondary/60 border-border/40 mt-1" placeholder="Ex: Query auditoria de folha" /></div>
-      <div>
-        <Label className="text-xs">Tipo</Label>
-        <Select value={form.tipo} onValueChange={v => setForm(f => ({ ...f, tipo: v }))}>
-          <SelectTrigger className="bg-secondary/60 border-border/40 mt-1"><SelectValue /></SelectTrigger>
-          <SelectContent>{["SQL", "Procedimento", "Erro", "Documentação"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs">Tipo</Label>
+          <Select value={form.tipo} onValueChange={v => setForm(f => ({ ...f, tipo: v }))}>
+            <SelectTrigger className="bg-secondary/60 border-border/40 mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>{["SQL", "Procedimento", "Erro", "Documentação"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Categoria</Label>
+          <Select value={form.categoria} onValueChange={v => setForm(f => ({ ...f, categoria: v }))}>
+            <SelectTrigger className="bg-secondary/60 border-border/40 mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>{CATEGORIAS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
       </div>
       <div><Label className="text-xs">Conteúdo</Label><Textarea value={form.conteudo} onChange={e => setForm(f => ({ ...f, conteudo: e.target.value }))} className="bg-secondary/60 border-border/40 mt-1 font-mono text-xs min-h-[120px]" placeholder="SELECT * FROM..." /></div>
       <div className="flex gap-3 justify-end pt-1">
