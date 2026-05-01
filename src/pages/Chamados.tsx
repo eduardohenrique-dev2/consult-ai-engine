@@ -589,11 +589,15 @@ function ChamadoDetail({ chamado, clientes, onDelete, onUpdated }: { chamado: an
 
 function CreateChamadoForm({ clientes, onClose, onSuccess }: { clientes: any[]; onClose: () => void; onSuccess: () => void }) {
   const { user } = useAuth();
-  const [form, setForm] = useState({ titulo: "", descricao: "", tipo: "Folha", prioridade: "", clienteId: "" });
+  const [form, setForm] = useState({
+    titulo: "", descricao: "", tipo: "Folha", prioridade: "", clienteId: "",
+    eh_esocial: false, evento_esocial: "",
+  });
   const [submitting, setSubmitting] = useState(false);
 
   const suggestedPriority = autoClassifyPriority(form.tipo, form.descricao);
   const effectivePriority = form.prioridade || suggestedPriority;
+  const isEsocialTipo = form.tipo === "eSocial";
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -605,7 +609,9 @@ function CreateChamadoForm({ clientes, onClose, onSuccess }: { clientes: any[]; 
       cliente_id: form.clienteId || null,
       responsavel_id: user?.id,
       status: "Novo",
-    });
+      eh_esocial: form.eh_esocial || isEsocialTipo,
+      evento_esocial: form.evento_esocial || null,
+    } as any);
     setSubmitting(false);
     if (error) return;
     onSuccess();
@@ -643,6 +649,32 @@ function CreateChamadoForm({ clientes, onClose, onSuccess }: { clientes: any[]; 
           <SelectContent>{clientes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
         </Select>
       </div>
+
+      {/* eSocial */}
+      <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-3">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <Checkbox
+            checked={form.eh_esocial || isEsocialTipo}
+            disabled={isEsocialTipo}
+            onCheckedChange={(v) => setForm({ ...form, eh_esocial: !!v })}
+          />
+          <span className="text-xs font-medium flex items-center gap-1.5">
+            <FileWarning className="h-3.5 w-3.5 text-warning" /> Relacionado ao eSocial
+          </span>
+        </label>
+        {(form.eh_esocial || isEsocialTipo) && (
+          <div>
+            <Label className="text-[10px] text-muted-foreground">Evento eSocial (opcional)</Label>
+            <Input
+              value={form.evento_esocial}
+              onChange={e => setForm({ ...form, evento_esocial: e.target.value.toUpperCase() })}
+              className="bg-background border-border/50 mt-1 h-8 text-xs"
+              placeholder="Ex: S-1200, S-1210, S-2200"
+            />
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-3 justify-end pt-2">
         <Button variant="outline" onClick={onClose} className="border-border/50">Cancelar</Button>
         <Button onClick={handleSubmit} disabled={!form.titulo || submitting} className="gap-2 shadow-lg shadow-primary/20">
