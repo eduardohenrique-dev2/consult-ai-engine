@@ -109,17 +109,29 @@ export default function BaseConhecimentoPage() {
         </Dialog>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar na base..." className="pl-9 bg-secondary/60 border-border/40 h-9 text-xs" />
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar na base..." className="pl-9 bg-secondary/60 border-border/40 h-9 text-xs" />
+          </div>
+          <div className="flex gap-1.5 flex-wrap">
+            {["all", "SQL", "Procedimento", "Erro", "Documentação"].map(t => (
+              <Button key={t} variant={filterType === t ? "default" : "outline"} size="sm"
+                onClick={() => setFilterType(t)}
+                className={`h-7 text-[10px] px-2.5 ${filterType === t ? "" : "border-border/30 text-muted-foreground"}`}>
+                {t === "all" ? "Todos" : t}
+              </Button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-1.5">
-          {["all", "SQL", "Procedimento", "Erro", "Documentação"].map(t => (
-            <Button key={t} variant={filterType === t ? "default" : "outline"} size="sm"
-              onClick={() => setFilterType(t)}
-              className={`h-7 text-[10px] px-2.5 ${filterType === t ? "" : "border-border/30 text-muted-foreground"}`}>
-              {t === "all" ? "Todos" : t}
+        <div className="flex gap-1.5 flex-wrap">
+          <span className="text-[10px] text-muted-foreground self-center mr-1">Categoria:</span>
+          {["all", ...CATEGORIAS].map(c => (
+            <Button key={c} variant={filterCategoria === c ? "default" : "outline"} size="sm"
+              onClick={() => setFilterCategoria(c)}
+              className={`h-7 text-[10px] px-2.5 ${filterCategoria === c ? "" : "border-border/30 text-muted-foreground"}`}>
+              {c === "all" ? "Todas" : c}
             </Button>
           ))}
         </div>
@@ -130,6 +142,7 @@ export default function BaseConhecimentoPage() {
           const config = tipoConfig[item.tipo] || tipoConfig.SQL;
           const Icon = config.icon;
           const isFav = favorites.has(item.id);
+          const cat = item.categoria || "Geral";
           return (
             <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
               className="glass rounded-2xl border border-border/30 p-5 hover:border-primary/20 transition-all">
@@ -143,6 +156,7 @@ export default function BaseConhecimentoPage() {
                     <Star className={`h-3.5 w-3.5 ${isFav ? "fill-warning text-warning" : "text-muted-foreground/40"}`} />
                   </button>
                   <Badge variant="outline" className={`text-[8px] ${config.color}`}>{item.tipo}</Badge>
+                  <Badge variant="outline" className={`text-[8px] ${categoriaColors[cat] || categoriaColors.Geral}`}>{cat}</Badge>
                 </div>
               </div>
               <div className="relative rounded-xl bg-background/40 border border-border/20 p-3">
