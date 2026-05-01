@@ -168,6 +168,15 @@ export default function LoginPage() {
                 <span className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> {forgotMode ? "Enviar email" : isLogin ? "Entrar" : "Criar conta"}</span>
               )}
             </Button>
+            {forgotMode && (
+              <button
+                type="button"
+                onClick={() => setForgotMode(false)}
+                className="w-full text-[10px] text-muted-foreground hover:text-foreground mt-2"
+              >
+                ← Voltar ao login
+              </button>
+            )}
           </form>
 
           <p className="text-center text-[10px] text-muted-foreground mt-6">
