@@ -106,6 +106,10 @@ export default {
           "0%, 100%": { boxShadow: "0 0 15px hsl(245 80% 65% / 0.2)" },
           "50%": { boxShadow: "0 0 30px hsl(245 80% 65% / 0.4)" },
         },
+        "pulse-soft": {
+          "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--critical) / 0.25)" },
+          "50%": { boxShadow: "0 0 0 6px hsl(var(--critical) / 0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -114,6 +118,7 @@ export default {
         "slide-in-left": "slide-in-left 0.3s ease-out forwards",
         shimmer: "shimmer 2s infinite linear",
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
+        "pulse-soft": "pulse-soft 2.2s ease-in-out infinite",
       },
     },
   },
