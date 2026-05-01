@@ -40,6 +40,7 @@ export type Database = {
       }
       base_conhecimento: {
         Row: {
+          categoria: string
           conteudo: string
           created_at: string
           id: string
@@ -47,6 +48,7 @@ export type Database = {
           titulo: string
         }
         Insert: {
+          categoria?: string
           conteudo: string
           created_at?: string
           id?: string
@@ -54,6 +56,7 @@ export type Database = {
           titulo: string
         }
         Update: {
+          categoria?: string
           conteudo?: string
           created_at?: string
           id?: string
@@ -99,6 +102,8 @@ export type Database = {
           cliente_id: string | null
           created_at: string
           descricao: string | null
+          eh_esocial: boolean
+          evento_esocial: string | null
           id: string
           observacoes: string | null
           prioridade: string
@@ -114,6 +119,8 @@ export type Database = {
           cliente_id?: string | null
           created_at?: string
           descricao?: string | null
+          eh_esocial?: boolean
+          evento_esocial?: string | null
           id?: string
           observacoes?: string | null
           prioridade?: string
@@ -129,6 +136,8 @@ export type Database = {
           cliente_id?: string | null
           created_at?: string
           descricao?: string | null
+          eh_esocial?: boolean
+          evento_esocial?: string | null
           id?: string
           observacoes?: string | null
           prioridade?: string
