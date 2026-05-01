@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Sparkles, Loader2, MessageSquare, Send, History, Pencil, Trash2, Save, X } from "lucide-react";
+import { Plus, Search, Sparkles, Loader2, MessageSquare, Send, History, Pencil, Trash2, Save, X, AlertTriangle, FileWarning } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,6 +56,8 @@ export default function Chamados() {
   const [selectedChamado, setSelectedChamado] = useState<any | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [onlyEsocial, setOnlyEsocial] = useState(false);
+  const [onlyCritica, setOnlyCritica] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -112,10 +115,13 @@ export default function Chamados() {
     },
   });
 
-  const filtered = chamados.filter((c: any) =>
-    c.titulo.toLowerCase().includes(search.toLowerCase()) ||
-    (c.clientes?.nome || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = chamados.filter((c: any) => {
+    const matchesSearch = c.titulo.toLowerCase().includes(search.toLowerCase()) ||
+      (c.clientes?.nome || "").toLowerCase().includes(search.toLowerCase());
+    const matchesEsocial = !onlyEsocial || c.eh_esocial === true || c.tipo === "eSocial";
+    const matchesCritica = !onlyCritica || c.prioridade === "critica";
+    return matchesSearch && matchesEsocial && matchesCritica;
+  });
 
   const handleDrop = (newStatus: ChamadoStatus) => {
     if (!draggedId) return;
