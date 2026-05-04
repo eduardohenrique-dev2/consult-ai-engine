@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Settings, User, Bell, Sparkles, LogOut } from "lucide-react";
+import { Settings, User, Bell, Sparkles, LogOut, Bot } from "lucide-react";
+import AutomationSettings from "@/components/AutomationSettings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
