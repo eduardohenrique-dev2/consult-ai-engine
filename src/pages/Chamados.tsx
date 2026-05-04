@@ -18,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import ImportEmailsButton from "@/components/ImportEmailsButton";
+import EmailReplyPanel from "@/components/EmailReplyPanel";
 
 type ChamadoStatus = "Novo" | "Em análise" | "Execução" | "Validação" | "Finalizado";
 
@@ -517,6 +518,11 @@ function ChamadoDetail({ chamado, clientes, onDelete, onUpdated }: { chamado: an
                       <code className="text-xs text-accent font-mono block whitespace-pre-wrap">{chamado.query_sugerida}</code>
                     </div>
                   )}
+
+                  <EmailReplyPanel chamado={chamado} onSent={async () => {
+                    const { data } = await supabase.from("chamados").select("*, clientes(nome)").eq("id", chamado.id).single();
+                    if (data) onUpdated(data);
+                  }} />
                 </>
               )}
             </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Settings, User, Bell, Sparkles, LogOut } from "lucide-react";
+import { Settings, User, Bell, Sparkles, LogOut, Bot } from "lucide-react";
+import AutomationSettings from "@/components/AutomationSettings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,10 +32,11 @@ export default function Configuracoes() {
       </div>
 
       <Tabs defaultValue="perfil" className="space-y-4">
-        <TabsList className="bg-secondary/50 grid w-full grid-cols-3">
+        <TabsList className="bg-secondary/50 grid w-full grid-cols-4">
           <TabsTrigger value="perfil" className="text-xs gap-1.5"><User className="h-3 w-3" /> Perfil</TabsTrigger>
           <TabsTrigger value="notificacoes" className="text-xs gap-1.5"><Bell className="h-3 w-3" /> Notificações</TabsTrigger>
           <TabsTrigger value="ia" className="text-xs gap-1.5"><Sparkles className="h-3 w-3" /> IA</TabsTrigger>
+          <TabsTrigger value="automacao" className="text-xs gap-1.5"><Bot className="h-3 w-3" /> Automação</TabsTrigger>
         </TabsList>
 
         <TabsContent value="perfil">
@@ -100,6 +102,13 @@ export default function Configuracoes() {
               <p className="text-xs text-neon-purple font-medium mb-1">🤖 Modelo ativo</p>
               <p className="text-[10px] text-muted-foreground">Gemini 2.5 Flash — otimizado para consultoria TOTVS RM</p>
             </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="automacao">
+          <div className="card-gradient rounded-xl border border-border/40 p-5">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Bot className="h-4 w-4 text-neon-purple" /> Automação de Atendimento</h3>
+            <AutomationSettings />
           </div>
         </TabsContent>
       </Tabs>
