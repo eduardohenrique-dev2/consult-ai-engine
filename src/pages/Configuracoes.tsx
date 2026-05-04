@@ -32,10 +32,11 @@ export default function Configuracoes() {
       </div>
 
       <Tabs defaultValue="perfil" className="space-y-4">
-        <TabsList className="bg-secondary/50 grid w-full grid-cols-3">
+        <TabsList className="bg-secondary/50 grid w-full grid-cols-4">
           <TabsTrigger value="perfil" className="text-xs gap-1.5"><User className="h-3 w-3" /> Perfil</TabsTrigger>
           <TabsTrigger value="notificacoes" className="text-xs gap-1.5"><Bell className="h-3 w-3" /> Notificações</TabsTrigger>
           <TabsTrigger value="ia" className="text-xs gap-1.5"><Sparkles className="h-3 w-3" /> IA</TabsTrigger>
+          <TabsTrigger value="automacao" className="text-xs gap-1.5"><Bot className="h-3 w-3" /> Automação</TabsTrigger>
         </TabsList>
 
         <TabsContent value="perfil">
