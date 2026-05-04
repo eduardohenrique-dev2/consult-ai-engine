@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_learning: {
+        Row: {
+          chamado_id: string | null
+          corrigido_por: string | null
+          created_at: string
+          id: string
+          resposta_corrigida: string | null
+          resposta_original: string | null
+        }
+        Insert: {
+          chamado_id?: string | null
+          corrigido_por?: string | null
+          created_at?: string
+          id?: string
+          resposta_corrigida?: string | null
+          resposta_original?: string | null
+        }
+        Update: {
+          chamado_id?: string | null
+          corrigido_por?: string | null
+          created_at?: string
+          id?: string
+          resposta_corrigida?: string | null
+          resposta_original?: string | null
+        }
+        Relationships: []
+      }
       automacoes: {
         Row: {
           ativo: boolean
@@ -99,7 +126,9 @@ export type Database = {
       }
       chamados: {
         Row: {
+          categoria: string | null
           cliente_id: string | null
+          confianca_ia: number | null
           created_at: string
           descricao: string | null
           eh_esocial: boolean
@@ -109,14 +138,18 @@ export type Database = {
           prioridade: string
           query_sugerida: string | null
           responsavel_id: string | null
+          resposta_enviada: boolean
           status: string
           sugestao_ia: string | null
+          thread_id: string | null
           tipo: string
           titulo: string
           updated_at: string
         }
         Insert: {
+          categoria?: string | null
           cliente_id?: string | null
+          confianca_ia?: number | null
           created_at?: string
           descricao?: string | null
           eh_esocial?: boolean
@@ -126,14 +159,18 @@ export type Database = {
           prioridade?: string
           query_sugerida?: string | null
           responsavel_id?: string | null
+          resposta_enviada?: boolean
           status?: string
           sugestao_ia?: string | null
+          thread_id?: string | null
           tipo: string
           titulo: string
           updated_at?: string
         }
         Update: {
+          categoria?: string | null
           cliente_id?: string | null
+          confianca_ia?: number | null
           created_at?: string
           descricao?: string | null
           eh_esocial?: boolean
@@ -143,8 +180,10 @@ export type Database = {
           prioridade?: string
           query_sugerida?: string | null
           responsavel_id?: string | null
+          resposta_enviada?: boolean
           status?: string
           sugestao_ia?: string | null
+          thread_id?: string | null
           tipo?: string
           titulo?: string
           updated_at?: string
@@ -277,30 +316,75 @@ export type Database = {
         }
         Relationships: []
       }
-      imported_emails: {
+      email_logs: {
         Row: {
           assunto: string | null
           chamado_id: string | null
-          gmail_message_id: string
+          conteudo: string | null
+          created_at: string
+          destinatario: string | null
+          direction: string
+          erro: string | null
           id: string
-          imported_at: string
-          remetente: string | null
+          status: string
         }
         Insert: {
           assunto?: string | null
           chamado_id?: string | null
-          gmail_message_id: string
+          conteudo?: string | null
+          created_at?: string
+          destinatario?: string | null
+          direction: string
+          erro?: string | null
           id?: string
-          imported_at?: string
-          remetente?: string | null
+          status: string
         }
         Update: {
           assunto?: string | null
           chamado_id?: string | null
+          conteudo?: string | null
+          created_at?: string
+          destinatario?: string | null
+          direction?: string
+          erro?: string | null
+          id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      imported_emails: {
+        Row: {
+          assunto: string | null
+          chamado_id: string | null
+          data_email: string | null
+          gmail_message_id: string
+          id: string
+          imported_at: string
+          processed_status: string
+          remetente: string | null
+          thread_id: string | null
+        }
+        Insert: {
+          assunto?: string | null
+          chamado_id?: string | null
+          data_email?: string | null
+          gmail_message_id: string
+          id?: string
+          imported_at?: string
+          processed_status?: string
+          remetente?: string | null
+          thread_id?: string | null
+        }
+        Update: {
+          assunto?: string | null
+          chamado_id?: string | null
+          data_email?: string | null
           gmail_message_id?: string
           id?: string
           imported_at?: string
+          processed_status?: string
           remetente?: string | null
+          thread_id?: string | null
         }
         Relationships: [
           {
@@ -448,6 +532,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_settings: {
+        Row: {
+          auto_reply_enabled: boolean
+          check_interval_minutes: number
+          confidence_threshold: number
+          id: string
+          signature: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_reply_enabled?: boolean
+          check_interval_minutes?: number
+          confidence_threshold?: number
+          id?: string
+          signature?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_reply_enabled?: boolean
+          check_interval_minutes?: number
+          confidence_threshold?: number
+          id?: string
+          signature?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
