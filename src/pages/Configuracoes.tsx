@@ -104,6 +104,13 @@ export default function Configuracoes() {
             </div>
           </div>
         </TabsContent>
+
+        <TabsContent value="automacao">
+          <div className="card-gradient rounded-xl border border-border/40 p-5">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Bot className="h-4 w-4 text-neon-purple" /> Automação de Atendimento</h3>
+            <AutomationSettings />
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
