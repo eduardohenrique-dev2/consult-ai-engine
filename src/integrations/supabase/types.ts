@@ -277,6 +277,41 @@ export type Database = {
         }
         Relationships: []
       }
+      imported_emails: {
+        Row: {
+          assunto: string | null
+          chamado_id: string | null
+          gmail_message_id: string
+          id: string
+          imported_at: string
+          remetente: string | null
+        }
+        Insert: {
+          assunto?: string | null
+          chamado_id?: string | null
+          gmail_message_id: string
+          id?: string
+          imported_at?: string
+          remetente?: string | null
+        }
+        Update: {
+          assunto?: string | null
+          chamado_id?: string | null
+          gmail_message_id?: string
+          id?: string
+          imported_at?: string
+          remetente?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imported_emails_chamado_id_fkey"
+            columns: ["chamado_id"]
+            isOneToOne: false
+            referencedRelation: "chamados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           chamado_id: string | null
