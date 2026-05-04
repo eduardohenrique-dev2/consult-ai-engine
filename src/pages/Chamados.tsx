@@ -18,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import ImportEmailsButton from "@/components/ImportEmailsButton";
+import EmailReplyPanel from "@/components/EmailReplyPanel";
 
 type ChamadoStatus = "Novo" | "Em análise" | "Execução" | "Validação" | "Finalizado";
 
