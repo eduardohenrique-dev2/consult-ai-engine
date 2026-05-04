@@ -518,6 +518,11 @@ function ChamadoDetail({ chamado, clientes, onDelete, onUpdated }: { chamado: an
                       <code className="text-xs text-accent font-mono block whitespace-pre-wrap">{chamado.query_sugerida}</code>
                     </div>
                   )}
+
+                  <EmailReplyPanel chamado={chamado} onSent={async () => {
+                    const { data } = await supabase.from("chamados").select("*, clientes(nome)").eq("id", chamado.id).single();
+                    if (data) onUpdated(data);
+                  }} />
                 </>
               )}
             </div>
