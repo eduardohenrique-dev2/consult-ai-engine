@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Sparkles, Loader2, MessageSquare, Send, History, Pencil, Trash2, Save, X, AlertTriangle, FileWarning } from "lucide-react";
+import { Plus, Search, Sparkles, Loader2, MessageSquare, Send, History, Pencil, Trash2, Save, X, AlertTriangle, FileWarning, Mail } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
+import ImportEmailsButton from "@/components/ImportEmailsButton";
 
 type ChamadoStatus = "Novo" | "Em análise" | "Execução" | "Validação" | "Finalizado";
 
@@ -136,20 +137,26 @@ export default function Chamados() {
           <h1 className="text-2xl font-bold">Gestão de Chamados</h1>
           <p className="text-sm text-muted-foreground mt-1">Arraste os cards para alterar status</p>
         </div>
-        <Dialog open={showCreate} onOpenChange={setShowCreate}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"><Plus className="h-4 w-4" /> Novo Chamado</Button>
-          </DialogTrigger>
-          <DialogContent className="glass border-border/50 max-w-md">
-            <DialogHeader><DialogTitle>Criar Chamado</DialogTitle></DialogHeader>
-            <CreateChamadoForm clientes={clientes} onClose={() => setShowCreate(false)} onSuccess={() => {
-              setShowCreate(false);
-              queryClient.invalidateQueries({ queryKey: ["chamados-with-clients"] });
-              queryClient.invalidateQueries({ queryKey: ["chamados"] });
-              toast({ title: "✅ Chamado criado!", description: "Prioridade definida automaticamente." });
-            }} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2">
+          <ImportEmailsButton onImported={() => {
+            queryClient.invalidateQueries({ queryKey: ["chamados-with-clients"] });
+            queryClient.invalidateQueries({ queryKey: ["chamados"] });
+          }} />
+          <Dialog open={showCreate} onOpenChange={setShowCreate}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"><Plus className="h-4 w-4" /> Novo Chamado</Button>
+            </DialogTrigger>
+            <DialogContent className="glass border-border/50 max-w-md">
+              <DialogHeader><DialogTitle>Criar Chamado</DialogTitle></DialogHeader>
+              <CreateChamadoForm clientes={clientes} onClose={() => setShowCreate(false)} onSuccess={() => {
+                setShowCreate(false);
+                queryClient.invalidateQueries({ queryKey: ["chamados-with-clients"] });
+                queryClient.invalidateQueries({ queryKey: ["chamados"] });
+                toast({ title: "✅ Chamado criado!", description: "Prioridade definida automaticamente." });
+              }} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
