@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { format, subDays, parseISO, differenceInHours } from "date-fns";
+import AutomationMetrics from "@/components/AutomationMetrics";
 
 const tooltipStyle = {
   background: "hsl(228 18% 9% / 0.95)",
@@ -206,6 +207,8 @@ export default function Dashboard() {
         <StatCard title="SLA Violado" value={slaViolated} icon={AlertTriangle} variant={slaViolated > 0 ? "critical" : "default"} subtitle="> 24h abertos" />
         <StatCard title="Clientes" value={clientes.length} icon={Users} variant={clientesCriticos > 0 ? "critical" : "default"} subtitle={clientesCriticos > 0 ? `${clientesCriticos} crítico(s)` : "Operacionais"} />
       </div>
+
+      <AutomationMetrics />
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
