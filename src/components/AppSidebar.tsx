@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Ticket, MessageSquareText, Users,
-  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Shield, CalendarDays,
+  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Shield, CalendarDays, FileText,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -26,6 +26,7 @@ const systemItems = [
   { title: "Base de Conhecimento", url: "/conhecimento", icon: BookOpen },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Automações", url: "/automacoes", icon: Zap },
+  { title: "Logs de Importação", url: "/logs-importacao", icon: FileText },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
   { title: "Admin", url: "/admin", icon: Shield, adminOnly: true },
 ];

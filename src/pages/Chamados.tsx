@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import ImportEmailsButton from "@/components/ImportEmailsButton";
 import EmailReplyPanel from "@/components/EmailReplyPanel";
+import AttachmentsList from "@/components/AttachmentsList";
 
 type ChamadoStatus = "Novo" | "Em análise" | "Execução" | "Validação" | "Finalizado";
 
@@ -516,6 +517,18 @@ function ChamadoDetail({ chamado, clientes, onDelete, onUpdated }: { chamado: an
                     <div className="rounded-xl bg-secondary/80 p-4">
                       <p className="text-[10px] text-muted-foreground mb-2 font-medium uppercase tracking-wider">💻 Query SQL Sugerida</p>
                       <code className="text-xs text-accent font-mono block whitespace-pre-wrap">{chamado.query_sugerida}</code>
+                    </div>
+                  )}
+
+                  <AttachmentsList chamadoId={chamado.id} />
+
+                  {chamado.nivel_risco === "alto" && (
+                    <div className="rounded-xl border border-critical/40 bg-critical/5 p-3 text-xs text-critical flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 mt-0.5" />
+                      <div>
+                        <p className="font-semibold">⛔ Risco alto — envio automático bloqueado</p>
+                        <p className="text-[11px] opacity-80 mt-0.5">{chamado.motivo_bloqueio_auto || "Requer revisão manual"}</p>
+                      </div>
                     </div>
                   )}
 

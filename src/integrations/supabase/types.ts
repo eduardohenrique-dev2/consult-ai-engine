@@ -92,6 +92,45 @@ export type Database = {
         }
         Relationships: []
       }
+      chamado_anexos: {
+        Row: {
+          chamado_id: string
+          created_at: string
+          id: string
+          nome_arquivo: string
+          origem: string
+          storage_path: string | null
+          tamanho_bytes: number | null
+          texto_extraido: string | null
+          tipo: string
+          url: string
+        }
+        Insert: {
+          chamado_id: string
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          origem?: string
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          texto_extraido?: string | null
+          tipo?: string
+          url: string
+        }
+        Update: {
+          chamado_id?: string
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          origem?: string
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          texto_extraido?: string | null
+          tipo?: string
+          url?: string
+        }
+        Relationships: []
+      }
       chamado_interactions: {
         Row: {
           chamado_id: string
@@ -134,6 +173,8 @@ export type Database = {
           eh_esocial: boolean
           evento_esocial: string | null
           id: string
+          motivo_bloqueio_auto: string | null
+          nivel_risco: string | null
           observacoes: string | null
           prioridade: string
           query_sugerida: string | null
@@ -155,6 +196,8 @@ export type Database = {
           eh_esocial?: boolean
           evento_esocial?: string | null
           id?: string
+          motivo_bloqueio_auto?: string | null
+          nivel_risco?: string | null
           observacoes?: string | null
           prioridade?: string
           query_sugerida?: string | null
@@ -176,6 +219,8 @@ export type Database = {
           eh_esocial?: boolean
           evento_esocial?: string | null
           id?: string
+          motivo_bloqueio_auto?: string | null
+          nivel_risco?: string | null
           observacoes?: string | null
           prioridade?: string
           query_sugerida?: string | null
@@ -313,6 +358,92 @@ export type Database = {
           page_context?: string | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      email_import_log_itens: {
+        Row: {
+          anexos_processados: number
+          assunto: string | null
+          chamado_id: string | null
+          created_at: string
+          email_id: string
+          id: string
+          log_id: string
+          mensagem_erro: string | null
+          remetente: string | null
+          status: string
+        }
+        Insert: {
+          anexos_processados?: number
+          assunto?: string | null
+          chamado_id?: string | null
+          created_at?: string
+          email_id: string
+          id?: string
+          log_id: string
+          mensagem_erro?: string | null
+          remetente?: string | null
+          status: string
+        }
+        Update: {
+          anexos_processados?: number
+          assunto?: string | null
+          chamado_id?: string | null
+          created_at?: string
+          email_id?: string
+          id?: string
+          log_id?: string
+          mensagem_erro?: string | null
+          remetente?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_import_log_itens_log_id_fkey"
+            columns: ["log_id"]
+            isOneToOne: false
+            referencedRelation: "email_import_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_import_logs: {
+        Row: {
+          classificacao_padrao: string | null
+          created_at: string
+          data_importacao: string
+          id: string
+          status: string
+          total_duplicados: number
+          total_erros: number
+          total_importados: number
+          total_processados: number
+          usuario_id: string | null
+        }
+        Insert: {
+          classificacao_padrao?: string | null
+          created_at?: string
+          data_importacao?: string
+          id?: string
+          status?: string
+          total_duplicados?: number
+          total_erros?: number
+          total_importados?: number
+          total_processados?: number
+          usuario_id?: string | null
+        }
+        Update: {
+          classificacao_padrao?: string | null
+          created_at?: string
+          data_importacao?: string
+          id?: string
+          status?: string
+          total_duplicados?: number
+          total_erros?: number
+          total_importados?: number
+          total_processados?: number
+          usuario_id?: string | null
         }
         Relationships: []
       }
@@ -536,27 +667,39 @@ export type Database = {
       system_settings: {
         Row: {
           auto_reply_enabled: boolean
+          bloquear_rescisoes: boolean
+          bloquear_valores_altos: boolean
+          categorias_permitidas_auto: string[]
           check_interval_minutes: number
           confidence_threshold: number
           id: string
           signature: string | null
           updated_at: string
+          valor_limite: number
         }
         Insert: {
           auto_reply_enabled?: boolean
+          bloquear_rescisoes?: boolean
+          bloquear_valores_altos?: boolean
+          categorias_permitidas_auto?: string[]
           check_interval_minutes?: number
           confidence_threshold?: number
           id?: string
           signature?: string | null
           updated_at?: string
+          valor_limite?: number
         }
         Update: {
           auto_reply_enabled?: boolean
+          bloquear_rescisoes?: boolean
+          bloquear_valores_altos?: boolean
+          categorias_permitidas_auto?: string[]
           check_interval_minutes?: number
           confidence_threshold?: number
           id?: string
           signature?: string | null
           updated_at?: string
+          valor_limite?: number
         }
         Relationships: []
       }
