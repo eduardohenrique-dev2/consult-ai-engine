@@ -96,6 +96,70 @@ export default function ChatIA() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleFileSelect = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Apenas imagens são suportadas", variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Imagem maior que 10MB", variant: "destructive" });
+      return;
+    }
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = e => setImagePreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleAnalyzeImage = async () => {
+    if (!imageFile) return;
+    setAnalyzing(true);
+    setProgress(10);
+    try {
+      const reader = new FileReader();
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(imageFile);
+      });
+      setProgress(40);
+      const base64 = dataUrl.split(",")[1];
+
+      const userText = input.trim() || "Analise esta imagem (provavelmente print do TOTVS RM).";
+      // mostra a mensagem do usuário com a imagem
+      sendMessage(`📎 ${imageFile.name}\n\n${userText}`);
+      setProgress(60);
+
+      const { data, error } = await supabase.functions.invoke("analyze-image", {
+        body: { image_base64: base64, mime_type: imageFile.type, prompt: userText },
+      });
+      setProgress(95);
+      if (error || !data?.success) {
+        toast({ title: "Erro na análise", description: error?.message || data?.error, variant: "destructive" });
+      } else {
+        // injeta resposta como assistente — adiciona ao messages local
+        setMessages(prev => [...prev, {
+          id: crypto.randomUUID(), role: "assistant", content: data.analysis,
+        } as any]);
+        toast({ title: "✅ Imagem analisada" });
+      }
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } finally {
+      setProgress(100);
+      setTimeout(() => {
+        setAnalyzing(false); setProgress(0);
+        setImageFile(null); setImagePreview(null); setInput("");
+      }, 400);
+    }
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setDragOver(false);
+    const f = e.dataTransfer.files[0];
+    if (f) handleFileSelect(f);
+  };
+
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-4">
       {/* Sidebar - Conversation History */}
