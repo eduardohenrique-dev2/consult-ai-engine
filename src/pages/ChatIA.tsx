@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, Database, Bot, User, Copy, Check, Plus, MessageSquare, Trash2, Code2, AlertTriangle, Lightbulb, Loader2 } from "lucide-react";
+import { Send, Sparkles, Database, Bot, User, Copy, Check, Plus, MessageSquare, Trash2, Code2, AlertTriangle, Lightbulb, Loader2, Image as ImageIcon, X, UploadCloud } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
