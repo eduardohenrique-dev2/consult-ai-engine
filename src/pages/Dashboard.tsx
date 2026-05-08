@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { format, subDays, parseISO, differenceInHours } from "date-fns";
 import AutomationMetrics from "@/components/AutomationMetrics";
+import NewChamadoDialog from "@/components/NewChamadoDialog";
 
 const tooltipStyle = {
   background: "hsl(228 18% 9% / 0.95)",
