@@ -213,7 +213,19 @@ export default function ChatIA() {
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-auto scrollbar-thin rounded-xl border border-border/30 bg-muted/20 p-4 space-y-4">
+        <div ref={scrollRef}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={onDrop}
+          className={`relative flex-1 overflow-auto scrollbar-thin rounded-xl border bg-muted/20 p-4 space-y-4 transition-colors ${
+            dragOver ? "border-primary border-2 bg-primary/5" : "border-border/30"
+          }`}>
+          {dragOver && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-primary/10 backdrop-blur-sm rounded-xl pointer-events-none">
+              <UploadCloud className="h-12 w-12 text-primary mb-2" />
+              <p className="text-sm font-medium text-primary">Solte a imagem para analisar</p>
+            </div>
+          )}
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="p-4 rounded-2xl bg-primary/10 mb-4">
