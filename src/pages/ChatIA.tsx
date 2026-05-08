@@ -323,18 +323,51 @@ export default function ChatIA() {
           ))}
         </div>
 
+        {/* Image preview */}
+        {imagePreview && (
+          <div className="mt-3 p-2 rounded-xl border border-primary/30 bg-primary/5 flex items-start gap-3">
+            <img src={imagePreview} alt="preview" className="h-20 w-20 object-cover rounded-lg" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium truncate">{imageFile?.name}</p>
+              <p className="text-[10px] text-muted-foreground">{((imageFile?.size || 0) / 1024).toFixed(1)} KB</p>
+              {analyzing && (
+                <div className="mt-2">
+                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-primary transition-all duration-200" style={{ width: `${progress}%` }} />
+                  </div>
+                  <p className="text-[10px] text-primary mt-1 flex items-center gap-1"><Loader2 className="h-2.5 w-2.5 animate-spin" /> Analisando imagem com IA...</p>
+                </div>
+              )}
+              <div className="flex gap-2 mt-2">
+                <Button size="sm" onClick={handleAnalyzeImage} disabled={analyzing} className="h-7 text-[10px] gap-1">
+                  <Sparkles className="h-3 w-3" /> Analisar
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => { setImageFile(null); setImagePreview(null); }} disabled={analyzing} className="h-7 text-[10px]">
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Input */}
         <div className="flex gap-2 mt-3">
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+            onChange={e => e.target.files?.[0] && handleFileSelect(e.target.files[0])} />
+          <Button variant="outline" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isTyping || analyzing}
+            className="shrink-0 h-auto" title="Enviar imagem">
+            <ImageIcon className="h-4 w-4" />
+          </Button>
           <Textarea
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(input); } }}
-            placeholder="Pergunte sobre TOTVS RM, gere SQL, resolva erros..."
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); imageFile ? handleAnalyzeImage() : handleSend(input); } }}
+            placeholder={imageFile ? "Pergunta sobre a imagem (opcional)..." : "Pergunte sobre TOTVS RM, gere SQL, resolva erros..."}
             className="bg-secondary border-border/50 resize-none min-h-[44px] max-h-[120px]"
             rows={1}
           />
-          <Button onClick={() => handleSend(input)} disabled={!input.trim() || isTyping} className="shrink-0 h-auto">
-            {isTyping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          <Button onClick={() => imageFile ? handleAnalyzeImage() : handleSend(input)} disabled={(!input.trim() && !imageFile) || isTyping || analyzing} className="shrink-0 h-auto">
+            {isTyping || analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </div>
