@@ -14,7 +14,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
-  role: "admin" | "consultor" | null;
+  role: "admin" | "consultor" | "supervisor" | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, nome: string) => Promise<{ error: Error | null }>;
