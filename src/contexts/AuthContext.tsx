@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
 
     if (profileRes.data) setProfile(profileRes.data as Profile);
-    if (roleRes.data) setRole(roleRes.data.role as "admin" | "consultor");
+    if (roleRes.data) setRole(roleRes.data.role as "admin" | "consultor" | "supervisor");
   };
 
   useEffect(() => {
