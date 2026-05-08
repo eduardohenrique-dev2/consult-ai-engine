@@ -20,6 +20,14 @@ export default function ImportEmailsButton({ onImported }: Props) {
   const { user } = useAuth();
 
   const handleImport = async () => {
+    if (localStorage.getItem("pm_import_enabled") === "false") {
+      toast({
+        title: "Importação pausada",
+        description: "Um administrador desativou a importação de e-mails. Reative em Admin → Integração de E-mail.",
+        variant: "destructive",
+      });
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("import-emails", {
