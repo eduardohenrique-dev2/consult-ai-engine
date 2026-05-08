@@ -14,7 +14,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
-  role: "admin" | "consultor" | null;
+  role: "admin" | "consultor" | "supervisor" | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, nome: string) => Promise<{ error: Error | null }>;
@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [role, setRole] = useState<"admin" | "consultor" | null>(null);
+  const [role, setRole] = useState<"admin" | "consultor" | "supervisor" | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfileAndRole = async (userId: string) => {
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
 
     if (profileRes.data) setProfile(profileRes.data as Profile);
-    if (roleRes.data) setRole(roleRes.data.role as "admin" | "consultor");
+    if (roleRes.data) setRole(roleRes.data.role as "admin" | "consultor" | "supervisor");
   };
 
   useEffect(() => {

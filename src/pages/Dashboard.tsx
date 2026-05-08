@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { format, subDays, parseISO, differenceInHours } from "date-fns";
 import AutomationMetrics from "@/components/AutomationMetrics";
+import NewChamadoDialog from "@/components/NewChamadoDialog";
 
 const tooltipStyle = {
   background: "hsl(228 18% 9% / 0.95)",
@@ -159,7 +160,8 @@ export default function Dashboard() {
           <h1 className="text-2xl font-extrabold tracking-tight">Dashboard</h1>
           <p className="text-xs text-muted-foreground mt-1">Visão operacional em tempo real</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <NewChamadoDialog />
           <Dialog open={showSimulate} onOpenChange={setShowSimulate}>
             <DialogTrigger asChild>
               <Button variant="outline" className="gap-2 border-accent/30 text-accent hover:bg-accent/10 transition-all text-xs h-9">

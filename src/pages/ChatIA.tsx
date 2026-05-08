@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, Database, Bot, User, Copy, Check, Plus, MessageSquare, Trash2, Code2, AlertTriangle, Lightbulb, Loader2 } from "lucide-react";
+import { Send, Sparkles, Database, Bot, User, Copy, Check, Plus, MessageSquare, Trash2, Code2, AlertTriangle, Lightbulb, Loader2, Image as ImageIcon, X, UploadCloud } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -35,8 +36,15 @@ const intentChips = [
 export default function ChatIA() {
   const [input, setInput] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const {
     messages, isTyping, conversationId, sendMessage,
     loadConversation, startNewConversation, setConversationId, setMessages,
@@ -86,6 +94,70 @@ export default function ChatIA() {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleFileSelect = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Apenas imagens são suportadas", variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Imagem maior que 10MB", variant: "destructive" });
+      return;
+    }
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = e => setImagePreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleAnalyzeImage = async () => {
+    if (!imageFile) return;
+    setAnalyzing(true);
+    setProgress(10);
+    try {
+      const reader = new FileReader();
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(imageFile);
+      });
+      setProgress(40);
+      const base64 = dataUrl.split(",")[1];
+
+      const userText = input.trim() || "Analise esta imagem (provavelmente print do TOTVS RM).";
+      // mostra a mensagem do usuário com a imagem
+      sendMessage(`📎 ${imageFile.name}\n\n${userText}`);
+      setProgress(60);
+
+      const { data, error } = await supabase.functions.invoke("analyze-image", {
+        body: { image_base64: base64, mime_type: imageFile.type, prompt: userText },
+      });
+      setProgress(95);
+      if (error || !data?.success) {
+        toast({ title: "Erro na análise", description: error?.message || data?.error, variant: "destructive" });
+      } else {
+        // injeta resposta como assistente — adiciona ao messages local
+        setMessages(prev => [...prev, {
+          id: crypto.randomUUID(), role: "assistant", content: data.analysis,
+        } as any]);
+        toast({ title: "✅ Imagem analisada" });
+      }
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } finally {
+      setProgress(100);
+      setTimeout(() => {
+        setAnalyzing(false); setProgress(0);
+        setImageFile(null); setImagePreview(null); setInput("");
+      }, 400);
+    }
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setDragOver(false);
+    const f = e.dataTransfer.files[0];
+    if (f) handleFileSelect(f);
   };
 
   return (
@@ -141,7 +213,19 @@ export default function ChatIA() {
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-auto scrollbar-thin rounded-xl border border-border/30 bg-muted/20 p-4 space-y-4">
+        <div ref={scrollRef}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={onDrop}
+          className={`relative flex-1 overflow-auto scrollbar-thin rounded-xl border bg-muted/20 p-4 space-y-4 transition-colors ${
+            dragOver ? "border-primary border-2 bg-primary/5" : "border-border/30"
+          }`}>
+          {dragOver && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-primary/10 backdrop-blur-sm rounded-xl pointer-events-none">
+              <UploadCloud className="h-12 w-12 text-primary mb-2" />
+              <p className="text-sm font-medium text-primary">Solte a imagem para analisar</p>
+            </div>
+          )}
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="p-4 rounded-2xl bg-primary/10 mb-4">
@@ -239,18 +323,51 @@ export default function ChatIA() {
           ))}
         </div>
 
+        {/* Image preview */}
+        {imagePreview && (
+          <div className="mt-3 p-2 rounded-xl border border-primary/30 bg-primary/5 flex items-start gap-3">
+            <img src={imagePreview} alt="preview" className="h-20 w-20 object-cover rounded-lg" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium truncate">{imageFile?.name}</p>
+              <p className="text-[10px] text-muted-foreground">{((imageFile?.size || 0) / 1024).toFixed(1)} KB</p>
+              {analyzing && (
+                <div className="mt-2">
+                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-primary transition-all duration-200" style={{ width: `${progress}%` }} />
+                  </div>
+                  <p className="text-[10px] text-primary mt-1 flex items-center gap-1"><Loader2 className="h-2.5 w-2.5 animate-spin" /> Analisando imagem com IA...</p>
+                </div>
+              )}
+              <div className="flex gap-2 mt-2">
+                <Button size="sm" onClick={handleAnalyzeImage} disabled={analyzing} className="h-7 text-[10px] gap-1">
+                  <Sparkles className="h-3 w-3" /> Analisar
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => { setImageFile(null); setImagePreview(null); }} disabled={analyzing} className="h-7 text-[10px]">
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Input */}
         <div className="flex gap-2 mt-3">
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+            onChange={e => e.target.files?.[0] && handleFileSelect(e.target.files[0])} />
+          <Button variant="outline" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isTyping || analyzing}
+            className="shrink-0 h-auto" title="Enviar imagem">
+            <ImageIcon className="h-4 w-4" />
+          </Button>
           <Textarea
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(input); } }}
-            placeholder="Pergunte sobre TOTVS RM, gere SQL, resolva erros..."
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); imageFile ? handleAnalyzeImage() : handleSend(input); } }}
+            placeholder={imageFile ? "Pergunta sobre a imagem (opcional)..." : "Pergunte sobre TOTVS RM, gere SQL, resolva erros..."}
             className="bg-secondary border-border/50 resize-none min-h-[44px] max-h-[120px]"
             rows={1}
           />
-          <Button onClick={() => handleSend(input)} disabled={!input.trim() || isTyping} className="shrink-0 h-auto">
-            {isTyping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          <Button onClick={() => imageFile ? handleAnalyzeImage() : handleSend(input)} disabled={(!input.trim() && !imageFile) || isTyping || analyzing} className="shrink-0 h-auto">
+            {isTyping || analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </div>
