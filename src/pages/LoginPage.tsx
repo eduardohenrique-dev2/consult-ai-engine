@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [nome, setNome] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   if (loading) {
     return (
