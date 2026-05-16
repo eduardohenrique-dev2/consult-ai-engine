@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Ticket, MessageSquareText, Users,
-  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Shield, CalendarDays, FileText,
+  Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Shield, CalendarDays, FileText, Plug, UserCircle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
