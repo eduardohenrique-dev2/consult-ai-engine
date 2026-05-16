@@ -1,114 +1,93 @@
+# Plano: Multiusuário com Email Individual por Usuário
 
+Transformação grande, faseada em 4 etapas incrementais. Nada será removido — só ampliado.
 
-# Plano de Evolução Profissional — PM Assistant AI
+## Visão geral
 
-Este plano organiza as melhorias em fases incrementais, priorizando funcionalidades estruturais primeiro, depois administração, e por último refinamento visual.
+Hoje o sistema usa **1 conexão Gmail global** (connector Lovable) e **chamados compartilhados**. Vamos passar para:
+- cada usuário conecta **seu próprio Gmail/Outlook/IMAP**
+- chamados ficam **vinculados ao usuário dono da integração**
+- RBAC controla quem vê o quê (consultor → seus, supervisor → equipe, admin → tudo)
+- sessão persistente já existe via Supabase Auth (refresh token automático) — só ajustamos UX ("Lembrar de mim")
 
----
+## Fase 1 — Banco de dados (migração base)
 
-## Fase 1: Chamados — Estrutura Completa
+Novas tabelas:
 
-**Objetivo:** Tornar a gestão de chamados profissional com edição, exclusão e detalhe organizado.
+- `user_integrations` — uma linha por integração conectada
+  - `user_id`, `provider` (gmail/outlook/imap/smtp), `email_address`, `display_name`
+  - `oauth_access_token`, `oauth_refresh_token`, `oauth_expires_at` (criptografados via pgsodium/vault)
+  - `imap_host`, `imap_port`, `imap_user`, `imap_password_encrypted`, `smtp_*`
+  - `status` (ativa/erro/expirada), `last_sync_at`, `sync_enabled`
+- `user_settings` — preferências por usuário (assinatura, auto-reply individual, threshold)
+- `user_sectors` — setor/cargo opcional (para "supervisor vê equipe")
+- `access_logs` — auditoria de login (IP, user agent, timestamp)
 
-- **Editar chamado:** Adicionar botão "Editar" no detalhe do chamado com formulário inline para alterar título, descrição, tipo, prioridade, cliente, responsável e observações internas
-- **Excluir chamado:** Botão com confirmação (AlertDialog). Requer nova RLS policy `DELETE` na tabela `chamados`
-- **Alterar status no detalhe:** Dropdown de status dentro do modal de detalhe, com `updateStatus` mutation que já existe — ao mudar, invalida queries automaticamente (realtime já está ativo)
-- **Layout do detalhe reorganizado:** Seções visuais claras:
-  - 📌 Informações Gerais (título, cliente, responsável, datas)
-  - 📊 Status (dropdown interativo)
-  - 🤖 Análise da IA (sugestão + query SQL)
-  - 🧠 Histórico IA (interações anteriores)
-- **Adicionar campo `observacoes`:** Migration para adicionar coluna `observacoes TEXT` na tabela `chamados`
+Alterações:
 
-**Arquivos:** `src/pages/Chamados.tsx`, nova migration
+- `chamados`: adicionar `owner_user_id` (NULL = legado/global), `integration_id`, `setor`
+- `imported_emails`: adicionar `integration_id`
+- `email_import_logs`: já tem `usuario_id` — passa a ser obrigatório
 
----
+RLS atualizado:
 
-## Fase 2: Clientes — CRUD Completo
+- `chamados` SELECT: `owner_user_id = auth.uid()` OR `has_role(admin)` OR (`has_role(supervisor)` AND mesmo setor)
+- `user_integrations`: só o dono vê/edita; admin pode listar
+- chamados legados (`owner_user_id IS NULL`) ficam visíveis para admin apenas, com botão de redistribuir
 
-**Objetivo:** Transformar a página de clientes de visualização para gestão completa.
+## Fase 2 — Integração Gmail por usuário (OAuth próprio)
 
-- **Cadastrar cliente:** Modal com campos: nome, CNPJ, contato (novo campo), status
-- **Editar cliente:** Modal de edição com os mesmos campos
-- **Excluir cliente:** Botão com confirmação. Requer RLS policy `DELETE` para `clientes`
-- **Adicionar campo `contato`:** Migration para nova coluna `contato TEXT` na tabela `clientes`
-- **Ver chamados por cliente:** Ao clicar no card, expandir/modal mostrando lista de chamados vinculados
-- **RLS:** Adicionar policies `INSERT`, `UPDATE`, `DELETE` para `anon` (sistema sem login obrigatório)
+O connector Lovable Gmail é **uma conta só** — não serve para multiusuário. Caminho correto: **OAuth Google nativo no app**.
 
-**Arquivos:** `src/pages/ClientesPage.tsx`, nova migration
+- O admin precisa criar credenciais OAuth no Google Cloud Console (Client ID + Secret) — pediremos via `add_secret` (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`).
+- Edge function `gmail-oauth-start` → gera URL de consent com scopes `gmail.readonly`, `gmail.send`, `gmail.modify`, redirect para `/integrations/callback`.
+- Edge function `gmail-oauth-callback` → troca code por tokens, salva criptografado em `user_integrations`.
+- Edge function `refresh-gmail-token` → renovação automática quando expira.
+- Refatorar `import-emails`: receber `integration_id`, usar token daquele usuário, criar chamados com `owner_user_id`.
+- Connector global atual continua funcionando como fallback admin (não removemos para não quebrar).
 
----
+Outlook/IMAP/SMTP: deixar **stub de UI + tabela preparada**, implementação real fica para fase posterior (escopo enorme).
 
-## Fase 3: Área Administrativa
+## Fase 3 — RBAC + UI multiusuário
 
-**Objetivo:** Criar aba Admin com gestão de usuários e permissões.
+- Página **/perfil** — dados pessoais, foto, assinatura, troca de senha, lista de integrações conectadas, histórico de login
+- Página **/integracoes** — "Conectar Gmail", "Conectar Outlook (em breve)", "IMAP customizado (em breve)", status de sync, botão desconectar
+- **AdminPage** expandida — criar/remover usuários, atribuir role+setor, ver integrações de cada um, redistribuir chamados legados
+- **Sidebar dinâmica** — Admin só aparece para admin (já é assim), adicionar Perfil + Integrações
+- **Chamados** — filtro automático por `owner_user_id`, com toggle "Ver da equipe" (supervisor) e "Ver todos" (admin)
+- **Dashboard** — métricas escopadas ao usuário; admin tem switch global
 
-- **Nova rota `/admin`** com página `AdminPage.tsx`
-- **Listar usuários** com perfil e role
-- **Editar role** (admin/consultor) via dropdown
-- **Excluir usuário** (soft: remover da tabela profiles/roles)
-- **Cadastrar novo usuário** via `supabase.auth.admin` (edge function para criar usuário)
-- **Controle de acesso:** Verificar `role === 'admin'` no componente. Esconder link do sidebar para não-admins
-- **Adicionar link condicional na sidebar**
+## Fase 4 — Sessão e segurança
 
-**Arquivos:** novo `src/pages/AdminPage.tsx`, `src/components/AppSidebar.tsx`, nova edge function `admin-users`
+- `signIn` ganha opção "Lembrar de mim" → controla `persistSession` (Supabase já persiste por padrão; quando desmarcado, usar `sessionStorage`)
+- Refresh token já é automático no SDK Supabase — confirmar
+- Trigger `log_user_login` → grava em `access_logs` no `auth.users` insert/sign-in (via edge function chamada pelo client)
+- Criptografia de tokens: usar pgsodium com chave do Vault; helper RPC `decrypt_integration_token(integration_id)` SECURITY DEFINER restrito ao dono
 
----
-
-## Fase 4: Configurações Expandidas
-
-**Objetivo:** Expandir a tela de configurações com seções organizadas.
-
-- **Perfil do usuário:** Editar nome e avatar
-- **Preferências de notificação:** Toggle para tipos de alerta
-- **Configurações da IA:** Modelo preferido, nível de detalhe das respostas
-- **Organizar em tabs:** Perfil | Notificações | IA | Sistema
-
-**Arquivos:** `src/pages/Configuracoes.tsx`
-
----
-
-## Fase 5: Dashboard e Visual Premium
-
-**Objetivo:** Melhorar hierarquia visual, reorganizar métricas e polir UI.
-
-- **Reorganizar cards:** Métricas mais relevantes no topo (chamados abertos, taxa resolução, tempo médio)
-- **Adicionar card "Tempo Médio de Resolução"**
-- **Melhorar gráficos:** Cores mais consistentes, labels mais claras
-- **Polish geral em todas as páginas:**
-  - Espaçamento uniforme
-  - Tipografia hierárquica
-  - Cards com `hover` e transições suaves
-  - Separadores visuais entre seções
-- **Melhorar sidebar footer:** Avatar e informações mais limpos
-
-**Arquivos:** `src/pages/Dashboard.tsx`, `src/index.css`, `src/components/StatCard.tsx`
-
----
-
-## Alterações no Banco de Dados
+## Técnico
 
 ```text
-Migration 1:
-  - ALTER TABLE chamados ADD COLUMN observacoes TEXT;
-  - CREATE POLICY "Public can delete chamados" ON chamados FOR DELETE TO anon USING (true);
-  - CREATE POLICY "Public can update chamados" ON chamados FOR UPDATE TO anon USING (true);
-
-Migration 2:
-  - ALTER TABLE clientes ADD COLUMN contato TEXT;
-  - CREATE POLICY "Public can insert clientes" ON clientes FOR INSERT TO anon WITH CHECK (true);
-  - CREATE POLICY "Public can update clientes" ON clientes FOR UPDATE TO anon USING (true);
-  - CREATE POLICY "Public can delete clientes" ON clientes FOR DELETE TO anon USING (true);
+[Usuário] → /integracoes → "Conectar Gmail"
+   → gmail-oauth-start (edge)
+   → consent Google
+   → /integrations/callback?code=...
+   → gmail-oauth-callback (edge) → salva em user_integrations
+   → import-emails(integration_id) roda por usuário (cron ou manual)
+   → chamados criados com owner_user_id = user_id
+   → RLS filtra automaticamente na listagem
 ```
 
----
+Pré-requisitos do usuário:
+1. Aprovar a migração SQL grande
+2. Fornecer `GOOGLE_OAUTH_CLIENT_ID` e `GOOGLE_OAUTH_CLIENT_SECRET` (criar projeto no Google Cloud Console; passo a passo no chat quando chegarmos lá)
+3. Adicionar `https://<projeto>.supabase.co/functions/v1/gmail-oauth-callback` aos Redirect URIs no Console
 
-## Ordem de Implementação
+## Escopo desta entrega
 
-1. Migrations (banco de dados)
-2. Chamados — edição, exclusão, detalhe reorganizado
-3. Clientes — CRUD completo
-4. Admin — nova página com gestão de usuários
-5. Configurações — expandir com tabs
-6. Dashboard e visual — polish final
+Dado o tamanho, sugiro executar **Fase 1 + Fase 2 (só Gmail) + Fase 3** nesta rodada. Fase 4 (criptografia pgsodium completa + access_logs) em seguida. Outlook/IMAP ficam stubbed como "em breve".
 
+## Não muda
+
+- Chat IA, Reuniões, Base de Conhecimento, Relatórios, Automações: intocados
+- Connector Gmail global atual continua disponível para admin (legado)
+- Visual/tema/sidebar mantidos — só novos itens
