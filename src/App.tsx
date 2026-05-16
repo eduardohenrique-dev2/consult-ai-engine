@@ -52,6 +52,8 @@ const App = () => (
                     <Route path="/admin" element={<AdminPage />} />
                     <Route path="/reunioes" element={<ReunioesPage />} />
                     <Route path="/logs-importacao" element={<ImportLogsPage />} />
+                    <Route path="/integracoes" element={<IntegrationsPage />} />
+                    <Route path="/perfil" element={<ProfilePage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </AppLayout>
