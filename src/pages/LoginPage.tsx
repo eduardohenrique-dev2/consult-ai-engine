@@ -173,6 +173,13 @@ export default function LoginPage() {
               </div>
             )}
 
+            {isLogin && !forgotMode && (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="accent-primary" />
+                Lembrar de mim
+              </label>
+            )}
+
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={submitting}>
               {submitting ? (
                 <span className="flex items-center gap-2"><span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> Aguarde...</span>
