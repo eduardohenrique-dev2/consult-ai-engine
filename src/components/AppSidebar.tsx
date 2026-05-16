@@ -27,6 +27,8 @@ const systemItems = [
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Automações", url: "/automacoes", icon: Zap },
   { title: "Logs de Importação", url: "/logs-importacao", icon: FileText },
+  { title: "Minhas Integrações", url: "/integracoes", icon: Plug },
+  { title: "Meu Perfil", url: "/perfil", icon: UserCircle },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
   { title: "Admin", url: "/admin", icon: Shield, adminOnly: true },
 ];
