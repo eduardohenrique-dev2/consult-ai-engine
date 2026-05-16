@@ -44,9 +44,20 @@ export default function LoginPage() {
         setForgotMode(false);
       }
     } else if (isLogin) {
+      try { localStorage.setItem("pm_remember", remember ? "1" : "0"); } catch {}
       const { error } = await signIn(email, password);
       if (error) {
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+      } else {
+        // log access
+        try {
+          const { data: { user: u } } = await (await import("@/integrations/supabase/client")).supabase.auth.getUser();
+          if (u) {
+            await (await import("@/integrations/supabase/client")).supabase.from("access_logs").insert({
+              user_id: u.id, event_type: "login", user_agent: navigator.userAgent,
+            });
+          }
+        } catch {}
       }
     } else {
       const { error } = await signUp(email, password, nome);
