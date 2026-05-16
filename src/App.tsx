@@ -18,6 +18,8 @@ import Configuracoes from "./pages/Configuracoes";
 import AdminPage from "./pages/AdminPage";
 import ReunioesPage from "./pages/ReunioesPage";
 import ImportLogsPage from "./pages/ImportLogsPage";
+import IntegrationsPage from "./pages/IntegrationsPage";
+import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
@@ -50,6 +52,8 @@ const App = () => (
                     <Route path="/admin" element={<AdminPage />} />
                     <Route path="/reunioes" element={<ReunioesPage />} />
                     <Route path="/logs-importacao" element={<ImportLogsPage />} />
+                    <Route path="/integracoes" element={<IntegrationsPage />} />
+                    <Route path="/perfil" element={<ProfilePage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </AppLayout>

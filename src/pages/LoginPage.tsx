@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [nome, setNome] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   if (loading) {
     return (
@@ -43,9 +44,20 @@ export default function LoginPage() {
         setForgotMode(false);
       }
     } else if (isLogin) {
+      try { localStorage.setItem("pm_remember", remember ? "1" : "0"); } catch {}
       const { error } = await signIn(email, password);
       if (error) {
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+      } else {
+        // log access
+        try {
+          const { data: { user: u } } = await (await import("@/integrations/supabase/client")).supabase.auth.getUser();
+          if (u) {
+            await (await import("@/integrations/supabase/client")).supabase.from("access_logs").insert({
+              user_id: u.id, event_type: "login", user_agent: navigator.userAgent,
+            });
+          }
+        } catch {}
       }
     } else {
       const { error } = await signUp(email, password, nome);
@@ -159,6 +171,13 @@ export default function LoginPage() {
                   </button>
                 )}
               </div>
+            )}
+
+            {isLogin && !forgotMode && (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="accent-primary" />
+                Lembrar de mim
+              </label>
             )}
 
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={submitting}>
