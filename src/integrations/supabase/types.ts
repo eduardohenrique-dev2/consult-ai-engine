@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_logs: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_learning: {
         Row: {
           chamado_id: string | null
@@ -173,13 +203,16 @@ export type Database = {
           eh_esocial: boolean
           evento_esocial: string | null
           id: string
+          integration_id: string | null
           motivo_bloqueio_auto: string | null
           nivel_risco: string | null
           observacoes: string | null
+          owner_user_id: string | null
           prioridade: string
           query_sugerida: string | null
           responsavel_id: string | null
           resposta_enviada: boolean
+          setor: string | null
           status: string
           sugestao_ia: string | null
           thread_id: string | null
@@ -196,13 +229,16 @@ export type Database = {
           eh_esocial?: boolean
           evento_esocial?: string | null
           id?: string
+          integration_id?: string | null
           motivo_bloqueio_auto?: string | null
           nivel_risco?: string | null
           observacoes?: string | null
+          owner_user_id?: string | null
           prioridade?: string
           query_sugerida?: string | null
           responsavel_id?: string | null
           resposta_enviada?: boolean
+          setor?: string | null
           status?: string
           sugestao_ia?: string | null
           thread_id?: string | null
@@ -219,13 +255,16 @@ export type Database = {
           eh_esocial?: boolean
           evento_esocial?: string | null
           id?: string
+          integration_id?: string | null
           motivo_bloqueio_auto?: string | null
           nivel_risco?: string | null
           observacoes?: string | null
+          owner_user_id?: string | null
           prioridade?: string
           query_sugerida?: string | null
           responsavel_id?: string | null
           resposta_enviada?: boolean
+          setor?: string | null
           status?: string
           sugestao_ia?: string | null
           thread_id?: string | null
@@ -239,6 +278,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamados_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "user_integrations"
             referencedColumns: ["id"]
           },
         ]
@@ -491,6 +537,8 @@ export type Database = {
           gmail_message_id: string
           id: string
           imported_at: string
+          integration_id: string | null
+          owner_user_id: string | null
           processed_status: string
           remetente: string | null
           thread_id: string | null
@@ -502,6 +550,8 @@ export type Database = {
           gmail_message_id: string
           id?: string
           imported_at?: string
+          integration_id?: string | null
+          owner_user_id?: string | null
           processed_status?: string
           remetente?: string | null
           thread_id?: string | null
@@ -513,6 +563,8 @@ export type Database = {
           gmail_message_id?: string
           id?: string
           imported_at?: string
+          integration_id?: string | null
+          owner_user_id?: string | null
           processed_status?: string
           remetente?: string | null
           thread_id?: string | null
@@ -523,6 +575,13 @@ export type Database = {
             columns: ["chamado_id"]
             isOneToOne: false
             referencedRelation: "chamados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imported_emails_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "user_integrations"
             referencedColumns: ["id"]
           },
         ]
@@ -567,27 +626,36 @@ export type Database = {
       }
       profiles: {
         Row: {
+          assinatura: string | null
           avatar_url: string | null
+          cargo: string | null
           created_at: string
           email: string | null
           id: string
           nome: string
+          setor: string | null
           user_id: string
         }
         Insert: {
+          assinatura?: string | null
           avatar_url?: string | null
+          cargo?: string | null
           created_at?: string
           email?: string | null
           id?: string
           nome?: string
+          setor?: string | null
           user_id: string
         }
         Update: {
+          assinatura?: string | null
           avatar_url?: string | null
+          cargo?: string | null
           created_at?: string
           email?: string | null
           id?: string
           nome?: string
+          setor?: string | null
           user_id?: string
         }
         Relationships: []
@@ -703,6 +771,84 @@ export type Database = {
         }
         Relationships: []
       }
+      user_integrations: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email_address: string
+          id: string
+          imap_host: string | null
+          imap_password_encrypted: string | null
+          imap_port: number | null
+          imap_user: string | null
+          last_error: string | null
+          last_sync_at: string | null
+          oauth_access_token: string | null
+          oauth_expires_at: string | null
+          oauth_refresh_token: string | null
+          oauth_scope: string | null
+          provider: string
+          smtp_host: string | null
+          smtp_password_encrypted: string | null
+          smtp_port: number | null
+          smtp_user: string | null
+          status: string
+          sync_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email_address: string
+          id?: string
+          imap_host?: string | null
+          imap_password_encrypted?: string | null
+          imap_port?: number | null
+          imap_user?: string | null
+          last_error?: string | null
+          last_sync_at?: string | null
+          oauth_access_token?: string | null
+          oauth_expires_at?: string | null
+          oauth_refresh_token?: string | null
+          oauth_scope?: string | null
+          provider: string
+          smtp_host?: string | null
+          smtp_password_encrypted?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
+          status?: string
+          sync_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email_address?: string
+          id?: string
+          imap_host?: string | null
+          imap_password_encrypted?: string | null
+          imap_port?: number | null
+          imap_user?: string | null
+          last_error?: string | null
+          last_sync_at?: string | null
+          oauth_access_token?: string | null
+          oauth_expires_at?: string | null
+          oauth_refresh_token?: string | null
+          oauth_scope?: string | null
+          provider?: string
+          smtp_host?: string | null
+          smtp_password_encrypted?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
+          status?: string
+          sync_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -721,6 +867,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          assinatura: string | null
+          auto_reply_enabled: boolean
+          confidence_threshold: number
+          created_at: string
+          id: string
+          notificacoes_email: boolean
+          notificacoes_push: boolean
+          tema: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assinatura?: string | null
+          auto_reply_enabled?: boolean
+          confidence_threshold?: number
+          created_at?: string
+          id?: string
+          notificacoes_email?: boolean
+          notificacoes_push?: boolean
+          tema?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assinatura?: string | null
+          auto_reply_enabled?: boolean
+          confidence_threshold?: number
+          created_at?: string
+          id?: string
+          notificacoes_email?: boolean
+          notificacoes_push?: boolean
+          tema?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -733,6 +918,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_setor: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "consultor" | "supervisor"
