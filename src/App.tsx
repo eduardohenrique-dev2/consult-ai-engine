@@ -18,6 +18,8 @@ import Configuracoes from "./pages/Configuracoes";
 import AdminPage from "./pages/AdminPage";
 import ReunioesPage from "./pages/ReunioesPage";
 import ImportLogsPage from "./pages/ImportLogsPage";
+import IntegrationsPage from "./pages/IntegrationsPage";
+import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
