@@ -217,7 +217,7 @@ serve(async (req) => {
           continue;
         }
 
-        const detailResp = await fetch(`${GMAIL_GATEWAY}/users/me/messages/${msg.id}?format=full`, { headers: gmailHeaders });
+        const detailResp = await fetch(`${gmailBaseUrl}/users/me/messages/${msg.id}?format=full`, { headers: gmailHeaders });
         if (!detailResp.ok) { errors++; continue; }
         const detail = await detailResp.json();
 
@@ -323,7 +323,7 @@ serve(async (req) => {
           if (att.size > MAX_ATTACHMENT_BYTES) continue;
           try {
             const attResp = await fetch(
-              `${GMAIL_GATEWAY}/users/me/messages/${msg.id}/attachments/${att.attachmentId}`,
+              `${gmailBaseUrl}/users/me/messages/${msg.id}/attachments/${att.attachmentId}`,
               { headers: gmailHeaders },
             );
             if (!attResp.ok) continue;
@@ -416,7 +416,7 @@ serve(async (req) => {
               'Content-Type: text/plain; charset="UTF-8"', "", fullBody,
             ].filter(Boolean).join("\r\n");
             const raw = btoa(unescape(encodeURIComponent(rfc))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-            const sendResp = await fetch(`${GMAIL_GATEWAY}/users/me/messages/send`, {
+            const sendResp = await fetch(`${gmailBaseUrl}/users/me/messages/send`, {
               method: "POST",
               headers: { ...gmailHeaders, "Content-Type": "application/json" },
               body: JSON.stringify({ raw, threadId }),
