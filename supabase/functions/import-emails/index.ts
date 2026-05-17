@@ -379,6 +379,7 @@ serve(async (req) => {
           remetente: senderEmail, thread_id: threadId,
           data_email: dateHdr ? new Date(dateHdr).toISOString() : null,
           processed_status: existingChamado ? "linked" : "created",
+          owner_user_id: ownerUserId, integration_id: activeIntegrationId,
         });
         await supabase.from("email_logs").insert({
           chamado_id: chamadoId, direction: "inbound", status: "recebido",
