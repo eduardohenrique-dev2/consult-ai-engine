@@ -302,6 +302,7 @@ serve(async (req) => {
             eh_esocial, evento_esocial, sugestao_ia, query_sugerida,
             thread_id: threadId, confianca_ia: confianca,
             nivel_risco: risco.nivel, motivo_bloqueio_auto: risco.motivo,
+            owner_user_id: ownerUserId, integration_id: activeIntegrationId,
           }).select().single();
           if (chamadoErr) {
             errors++;
