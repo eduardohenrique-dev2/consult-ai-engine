@@ -16,8 +16,25 @@ export default function ImportEmailsButton({ onImported }: Props) {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [classificacao, setClassificacao] = useState<string>("auto");
+  const [integrationId, setIntegrationId] = useState<string>("global");
+  const [integrations, setIntegrations] = useState<Array<{ id: string; email_address: string }>>([]);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user || !open) return;
+    supabase
+      .from("user_integrations")
+      .select("id, email_address")
+      .eq("user_id", user.id)
+      .eq("provider", "gmail")
+      .eq("status", "ativa")
+      .then(({ data }) => {
+        const list = data || [];
+        setIntegrations(list);
+        if (list.length && integrationId === "global") setIntegrationId(list[0].id);
+      });
+  }, [user, open]);
 
   const handleImport = async () => {
     if (localStorage.getItem("pm_import_enabled") === "false") {
