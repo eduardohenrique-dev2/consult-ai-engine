@@ -48,7 +48,11 @@ export default function ImportEmailsButton({ onImported }: Props) {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("import-emails", {
-        body: { classificacao_padrao: classificacao === "auto" ? null : classificacao, usuario_id: user?.id },
+        body: {
+          classificacao_padrao: classificacao === "auto" ? null : classificacao,
+          usuario_id: user?.id,
+          integration_id: integrationId !== "global" ? integrationId : null,
+        },
       });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Erro ao importar");
