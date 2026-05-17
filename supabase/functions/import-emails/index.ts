@@ -458,6 +458,14 @@ serve(async (req) => {
       }).eq("id", logId);
     }
 
+    if (activeIntegrationId) {
+      await supabase.from("user_integrations").update({
+        last_sync_at: new Date().toISOString(),
+        last_error: errors > 0 && imported === 0 ? "Falha em todos os emails do batch" : null,
+        status: errors > 0 && imported === 0 ? "erro" : "ativa",
+      }).eq("id", activeIntegrationId);
+    }
+
     return new Response(
       JSON.stringify({ success: true, imported, skipped, linked, autoReplied, errors, anexos: totalAnexos, total: messages.length, log_id: logId }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
