@@ -127,14 +127,12 @@ serve(async (req) => {
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const GOOGLE_MAIL_API_KEY = Deno.env.get("GOOGLE_MAIL_API_KEY");
-    if (!LOVABLE_API_KEY || !GOOGLE_MAIL_API_KEY) {
-      throw new Error("Gmail não conectado");
-    }
 
     let body: any = {};
     try { body = await req.json(); } catch { /* trigger sem body */ }
     const classificacao_padrao: string | null = body?.classificacao_padrao || null;
     const usuario_id: string | null = body?.usuario_id || null;
+    const integration_id: string | null = body?.integration_id || null;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -146,12 +144,49 @@ serve(async (req) => {
     const threshold = Number(settings?.confidence_threshold ?? 0.85);
     const categoriasAuto: string[] = settings?.categorias_permitidas_auto || ["Geral", "Folha", "Ponto", "Beneficios"];
 
-    const gmailHeaders = {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "X-Connection-Api-Key": GOOGLE_MAIL_API_KEY,
-    };
+    // === Resolve endpoint Gmail: per-user (integration) ou global (connector) ===
+    let gmailHeaders: Record<string, string>;
+    let gmailBaseUrl: string;
+    let ownerUserId: string | null = null;
+    let activeIntegrationId: string | null = null;
 
-    const listResp = await fetch(`${GMAIL_GATEWAY}/users/me/messages?maxResults=20&q=in:inbox`, { headers: gmailHeaders });
+    if (integration_id) {
+      const { data: integ, error: integErr } = await supabase
+        .from("user_integrations").select("*").eq("id", integration_id).maybeSingle();
+      if (integErr || !integ) throw new Error("Integração não encontrada");
+      if (integ.provider !== "gmail") throw new Error(`Provider ${integ.provider} ainda não suportado`);
+
+      // Refresh se expirado (margem 60s)
+      let accessToken = integ.oauth_access_token;
+      const expSoon = !integ.oauth_expires_at || (new Date(integ.oauth_expires_at).getTime() - Date.now() < 60_000);
+      if (expSoon) {
+        const refreshResp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/refresh-gmail-token`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({ integration_id }),
+        });
+        const refreshData = await refreshResp.json();
+        if (!refreshResp.ok) throw new Error(refreshData?.error || "Falha ao renovar token");
+        accessToken = refreshData.access_token;
+      }
+      gmailHeaders = { Authorization: `Bearer ${accessToken}` };
+      gmailBaseUrl = "https://gmail.googleapis.com/gmail/v1";
+      ownerUserId = integ.user_id;
+      activeIntegrationId = integ.id;
+    } else {
+      if (!LOVABLE_API_KEY || !GOOGLE_MAIL_API_KEY) throw new Error("Gmail não conectado");
+      gmailHeaders = {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "X-Connection-Api-Key": GOOGLE_MAIL_API_KEY,
+      };
+      gmailBaseUrl = GMAIL_GATEWAY;
+      ownerUserId = usuario_id;
+    }
+
+    const listResp = await fetch(`${gmailBaseUrl}/users/me/messages?maxResults=20&q=in:inbox`, { headers: gmailHeaders });
     if (!listResp.ok) throw new Error(`Gmail list falhou [${listResp.status}]: ${await listResp.text()}`);
     const listData = await listResp.json();
     const messages = listData.messages || [];
@@ -182,7 +217,7 @@ serve(async (req) => {
           continue;
         }
 
-        const detailResp = await fetch(`${GMAIL_GATEWAY}/users/me/messages/${msg.id}?format=full`, { headers: gmailHeaders });
+        const detailResp = await fetch(`${gmailBaseUrl}/users/me/messages/${msg.id}?format=full`, { headers: gmailHeaders });
         if (!detailResp.ok) { errors++; continue; }
         const detail = await detailResp.json();
 
@@ -267,6 +302,7 @@ serve(async (req) => {
             eh_esocial, evento_esocial, sugestao_ia, query_sugerida,
             thread_id: threadId, confianca_ia: confianca,
             nivel_risco: risco.nivel, motivo_bloqueio_auto: risco.motivo,
+            owner_user_id: ownerUserId, integration_id: activeIntegrationId,
           }).select().single();
           if (chamadoErr) {
             errors++;
@@ -288,7 +324,7 @@ serve(async (req) => {
           if (att.size > MAX_ATTACHMENT_BYTES) continue;
           try {
             const attResp = await fetch(
-              `${GMAIL_GATEWAY}/users/me/messages/${msg.id}/attachments/${att.attachmentId}`,
+              `${gmailBaseUrl}/users/me/messages/${msg.id}/attachments/${att.attachmentId}`,
               { headers: gmailHeaders },
             );
             if (!attResp.ok) continue;
@@ -343,6 +379,7 @@ serve(async (req) => {
           remetente: senderEmail, thread_id: threadId,
           data_email: dateHdr ? new Date(dateHdr).toISOString() : null,
           processed_status: existingChamado ? "linked" : "created",
+          owner_user_id: ownerUserId, integration_id: activeIntegrationId,
         });
         await supabase.from("email_logs").insert({
           chamado_id: chamadoId, direction: "inbound", status: "recebido",
@@ -381,7 +418,7 @@ serve(async (req) => {
               'Content-Type: text/plain; charset="UTF-8"', "", fullBody,
             ].filter(Boolean).join("\r\n");
             const raw = btoa(unescape(encodeURIComponent(rfc))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-            const sendResp = await fetch(`${GMAIL_GATEWAY}/users/me/messages/send`, {
+            const sendResp = await fetch(`${gmailBaseUrl}/users/me/messages/send`, {
               method: "POST",
               headers: { ...gmailHeaders, "Content-Type": "application/json" },
               body: JSON.stringify({ raw, threadId }),
@@ -419,6 +456,14 @@ serve(async (req) => {
         total_erros: errors,
         status,
       }).eq("id", logId);
+    }
+
+    if (activeIntegrationId) {
+      await supabase.from("user_integrations").update({
+        last_sync_at: new Date().toISOString(),
+        last_error: errors > 0 && imported === 0 ? "Falha em todos os emails do batch" : null,
+        status: errors > 0 && imported === 0 ? "erro" : "ativa",
+      }).eq("id", activeIntegrationId);
     }
 
     return new Response(

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -16,8 +16,25 @@ export default function ImportEmailsButton({ onImported }: Props) {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [classificacao, setClassificacao] = useState<string>("auto");
+  const [integrationId, setIntegrationId] = useState<string>("global");
+  const [integrations, setIntegrations] = useState<Array<{ id: string; email_address: string }>>([]);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user || !open) return;
+    supabase
+      .from("user_integrations")
+      .select("id, email_address")
+      .eq("user_id", user.id)
+      .eq("provider", "gmail")
+      .eq("status", "ativa")
+      .then(({ data }) => {
+        const list = data || [];
+        setIntegrations(list);
+        if (list.length && integrationId === "global") setIntegrationId(list[0].id);
+      });
+  }, [user, open]);
 
   const handleImport = async () => {
     if (localStorage.getItem("pm_import_enabled") === "false") {
@@ -31,7 +48,11 @@ export default function ImportEmailsButton({ onImported }: Props) {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("import-emails", {
-        body: { classificacao_padrao: classificacao === "auto" ? null : classificacao, usuario_id: user?.id },
+        body: {
+          classificacao_padrao: classificacao === "auto" ? null : classificacao,
+          usuario_id: user?.id,
+          integration_id: integrationId !== "global" ? integrationId : null,
+        },
       });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Erro ao importar");
@@ -64,6 +85,23 @@ export default function ImportEmailsButton({ onImported }: Props) {
           <DialogTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4" /> Importar Emails do Gmail</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
+          <div>
+            <Label className="text-xs">Conta de email</Label>
+            <Select value={integrationId} onValueChange={setIntegrationId}>
+              <SelectTrigger className="bg-secondary border-border/50 mt-1.5"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {integrations.map((i) => (
+                  <SelectItem key={i.id} value={i.id}>📬 {i.email_address}</SelectItem>
+                ))}
+                <SelectItem value="global">🌐 Caixa global (admin)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground mt-1.5">
+              {integrations.length === 0
+                ? "Você ainda não conectou um Gmail próprio. Use a caixa global ou conecte em Integrações."
+                : "Os chamados importados ficarão vinculados a esta conta."}
+            </p>
+          </div>
           <div>
             <Label className="text-xs">Classificação padrão</Label>
             <Select value={classificacao} onValueChange={setClassificacao}>
