@@ -86,6 +86,23 @@ export default function ImportEmailsButton({ onImported }: Props) {
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div>
+            <Label className="text-xs">Conta de email</Label>
+            <Select value={integrationId} onValueChange={setIntegrationId}>
+              <SelectTrigger className="bg-secondary border-border/50 mt-1.5"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {integrations.map((i) => (
+                  <SelectItem key={i.id} value={i.id}>📬 {i.email_address}</SelectItem>
+                ))}
+                <SelectItem value="global">🌐 Caixa global (admin)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground mt-1.5">
+              {integrations.length === 0
+                ? "Você ainda não conectou um Gmail próprio. Use a caixa global ou conecte em Integrações."
+                : "Os chamados importados ficarão vinculados a esta conta."}
+            </p>
+          </div>
+          <div>
             <Label className="text-xs">Classificação padrão</Label>
             <Select value={classificacao} onValueChange={setClassificacao}>
               <SelectTrigger className="bg-secondary border-border/50 mt-1.5"><SelectValue /></SelectTrigger>
