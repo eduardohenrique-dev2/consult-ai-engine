@@ -46,18 +46,19 @@ export default function ImportEmailsButton({ onImported }: Props) {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("import-emails", {
-        body: {
-          classificacao_padrao: classificacao === "auto" ? null : classificacao,
-          usuario_id: user?.id,
-          integration_id: integrationId !== "global" ? integrationId : null,
-        },
-      });
+      const selected = integrations.find(i => i.id === integrationId);
+      const isImap = selected?.provider === "imap";
+      const fn = isImap ? "imap-import" : "import-emails";
+      const body: any = isImap
+        ? { integration_id: integrationId, classificacao_padrao: classificacao === "auto" ? null : classificacao }
+        : { classificacao_padrao: classificacao === "auto" ? null : classificacao, usuario_id: user?.id, integration_id: integrationId !== "global" ? integrationId : null };
+
+      const { data, error } = await supabase.functions.invoke(fn, { body });
       if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || "Erro ao importar");
+      if (data?.error) throw new Error(data.error);
       toast({
         title: "📧 Importação concluída",
-        description: `${data.imported} novo(s) • ${data.skipped} duplicado(s) • ${data.anexos || 0} anexo(s)${data.errors > 0 ? ` • ${data.errors} erro(s)` : ""}`,
+        description: `${data.imported} novo(s) • ${data.skipped || 0} duplicado(s)${data.errors > 0 ? ` • ${data.errors} erro(s)` : ""}`,
       });
       setOpen(false);
       onImported?.();
