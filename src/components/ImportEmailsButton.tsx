@@ -91,7 +91,7 @@ export default function ImportEmailsButton({ onImported }: Props) {
               <SelectTrigger className="bg-secondary border-border/50 mt-1.5"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {integrations.map((i) => (
-                  <SelectItem key={i.id} value={i.id}>📬 {i.email_address}</SelectItem>
+                  <SelectItem key={i.id} value={i.id}>{i.provider === "imap" ? "🖧" : "📬"} {i.email_address} <span className="text-[10px] text-muted-foreground ml-1">({i.provider})</span></SelectItem>
                 ))}
                 <SelectItem value="global">🌐 Caixa global (admin)</SelectItem>
               </SelectContent>
