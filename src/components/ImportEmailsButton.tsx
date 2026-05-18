@@ -17,7 +17,7 @@ export default function ImportEmailsButton({ onImported }: Props) {
   const [open, setOpen] = useState(false);
   const [classificacao, setClassificacao] = useState<string>("auto");
   const [integrationId, setIntegrationId] = useState<string>("global");
-  const [integrations, setIntegrations] = useState<Array<{ id: string; email_address: string }>>([]);
+  const [integrations, setIntegrations] = useState<Array<{ id: string; email_address: string; provider: string }>>([]);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -25,9 +25,8 @@ export default function ImportEmailsButton({ onImported }: Props) {
     if (!user || !open) return;
     supabase
       .from("user_integrations")
-      .select("id, email_address")
+      .select("id, email_address, provider")
       .eq("user_id", user.id)
-      .eq("provider", "gmail")
       .eq("status", "ativa")
       .then(({ data }) => {
         const list = data || [];
