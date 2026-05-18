@@ -11,3 +11,13 @@ verify_jwt = false
 
 [functions.gmail-oauth-callback]
 verify_jwt = false
+
+[functions.imap-connect]
+verify_jwt = true
+
+[functions.imap-import]
+verify_jwt = true
+
+[functions.imap-send]
+verify_jwt = true
+
