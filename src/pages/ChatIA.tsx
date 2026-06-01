@@ -10,6 +10,7 @@ import { useChat } from "@/hooks/useChat";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
+import { EndOfConversationCard } from "@/components/EndOfConversationCard";
 
 const quickActions = [
   "Como listar funcionários ativos no RM?",
@@ -48,6 +49,7 @@ export default function ChatIA() {
   const {
     messages, isTyping, conversationId, sendMessage,
     loadConversation, startNewConversation, setConversationId, setMessages,
+    aiMode, aiConfidence, showFeedback, setShowFeedback, submitFeedback,
   } = useChat("chat");
 
   const { data: conversations = [] } = useQuery({
@@ -209,7 +211,12 @@ export default function ChatIA() {
             </h1>
             <p className="text-xs text-muted-foreground">Especialista TOTVS RM com RAG e histórico persistente</p>
           </div>
-          <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px]">IA Ativa • RAG</Badge>
+          <div className="flex items-center gap-2">
+            {aiMode === "offline" && (
+              <Badge variant="outline" className="text-[10px] border-warning/40 text-warning">Modo offline{aiConfidence ? ` • ${aiConfidence}` : ""}</Badge>
+            )}
+            <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px]">IA Ativa • RAG</Badge>
+          </div>
         </div>
 
         {/* Messages */}
@@ -286,6 +293,12 @@ export default function ChatIA() {
                 <span className="text-[11px] text-muted-foreground">Consultando base de conhecimento e gerando resposta...</span>
               </div>
             </motion.div>
+          )}
+          {showFeedback && (
+            <EndOfConversationCard
+              onSubmit={(p) => submitFeedback(p)}
+              onDismiss={() => setShowFeedback(false)}
+            />
           )}
         </div>
 

@@ -71,6 +71,63 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_runtime_state: {
+        Row: {
+          credits_status: string | null
+          id: number
+          mode: string
+          reason: string | null
+          since: string
+          updated_at: string
+        }
+        Insert: {
+          credits_status?: string | null
+          id?: number
+          mode?: string
+          reason?: string | null
+          since?: string
+          updated_at?: string
+        }
+        Update: {
+          credits_status?: string | null
+          id?: number
+          mode?: string
+          reason?: string | null
+          since?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json
+          resource_id: string | null
+          resource_type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          resource_id?: string | null
+          resource_type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          resource_id?: string | null
+          resource_type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       automacoes: {
         Row: {
           ativo: boolean
@@ -121,6 +178,41 @@ export type Database = {
           titulo?: string
         }
         Relationships: []
+      }
+      base_conhecimento_chunks: {
+        Row: {
+          chunk: string
+          conhecimento_id: string
+          created_at: string
+          embedding: string | null
+          id: string
+          metadata: Json
+        }
+        Insert: {
+          chunk: string
+          conhecimento_id: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json
+        }
+        Update: {
+          chunk?: string
+          conhecimento_id?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_conhecimento_chunks_conhecimento_id_fkey"
+            columns: ["conhecimento_id"]
+            isOneToOne: false
+            referencedRelation: "base_conhecimento"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chamado_anexos: {
         Row: {
@@ -192,6 +284,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      chamado_time_entries: {
+        Row: {
+          chamado_id: string
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          note: string | null
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          chamado_id: string
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          note?: string | null
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          chamado_id?: string
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          note?: string | null
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       chamados: {
         Row: {
@@ -380,6 +505,39 @@ export type Database = {
           nome?: string
           problemas?: string[] | null
           status?: string
+        }
+        Relationships: []
+      }
+      conversation_feedback: {
+        Row: {
+          chamado_id: string | null
+          conversation_id: string | null
+          created_at: string
+          faltou: string | null
+          funcionou: string | null
+          id: string
+          resultado: string
+          user_id: string
+        }
+        Insert: {
+          chamado_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          faltou?: string | null
+          funcionou?: string | null
+          id?: string
+          resultado: string
+          user_id: string
+        }
+        Update: {
+          chamado_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          faltou?: string | null
+          funcionou?: string | null
+          id?: string
+          resultado?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -586,6 +744,99 @@ export type Database = {
           },
         ]
       }
+      knowledge_entries: {
+        Row: {
+          chamado_origem_id: string | null
+          confianca: string
+          contexto: string | null
+          created_at: string
+          embedding: string | null
+          fonte: string | null
+          id: string
+          problema: string
+          proposed_by: string | null
+          resultado: string | null
+          solucao: string
+          updated_at: string
+          validacao: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          chamado_origem_id?: string | null
+          confianca?: string
+          contexto?: string | null
+          created_at?: string
+          embedding?: string | null
+          fonte?: string | null
+          id?: string
+          problema: string
+          proposed_by?: string | null
+          resultado?: string | null
+          solucao: string
+          updated_at?: string
+          validacao?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          chamado_origem_id?: string | null
+          confianca?: string
+          contexto?: string | null
+          created_at?: string
+          embedding?: string | null
+          fonte?: string | null
+          id?: string
+          problema?: string
+          proposed_by?: string | null
+          resultado?: string | null
+          solucao?: string
+          updated_at?: string
+          validacao?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_gaps: {
+        Row: {
+          chamado_id: string | null
+          conversation_id: string | null
+          created_at: string
+          id: string
+          motivo: string | null
+          origem: string | null
+          pergunta: string
+          status: string
+          sugestao: string | null
+          updated_at: string
+        }
+        Insert: {
+          chamado_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          origem?: string | null
+          pergunta: string
+          status?: string
+          sugestao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chamado_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          origem?: string | null
+          pergunta?: string
+          status?: string
+          sugestao?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           chamado_id: string | null
@@ -656,6 +907,42 @@ export type Database = {
           id?: string
           nome?: string
           setor?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      response_snippets: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          is_shared: boolean
+          shortcut: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          is_shared?: boolean
+          shortcut?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_shared?: boolean
+          shortcut?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -917,6 +1204,27 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      match_conhecimento: {
+        Args: { match_count?: number; query_embedding: string }
+        Returns: {
+          chunk: string
+          conhecimento_id: string
+          id: string
+          metadata: Json
+          similarity: number
+        }[]
+      }
+      match_knowledge_entries: {
+        Args: { match_count?: number; query_embedding: string }
+        Returns: {
+          confianca: string
+          contexto: string
+          id: string
+          problema: string
+          similarity: number
+          solucao: string
+        }[]
       }
       user_setor: { Args: { _user_id: string }; Returns: string }
     }
