@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { FloatingChat } from "@/components/FloatingChat";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { AiModeBanner } from "@/components/AiModeBanner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Search } from "lucide-react";
 
@@ -52,6 +53,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               </Badge>
             </div>
           </header>
+          <AiModeBanner />
           <main className="flex-1 overflow-auto p-5 lg:p-7 scrollbar-thin">
             {children}
           </main>

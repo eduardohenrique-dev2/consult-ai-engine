@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, Ticket, MessageSquareText, Users,
   Monitor, BookOpen, Zap, Settings, LogOut, BarChart3, Shield, CalendarDays, FileText, Plug, UserCircle,
+  Activity, CheckSquare, AlertTriangle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -24,6 +25,9 @@ const mainItems = [
 
 const systemItems = [
   { title: "Base de Conhecimento", url: "/conhecimento", icon: BookOpen },
+  { title: "Validar Conhecimento", url: "/conhecimento/validacoes", icon: CheckSquare, adminOnly: true },
+  { title: "Lacunas de Conhecimento", url: "/conhecimento/gaps", icon: AlertTriangle, adminOnly: true },
+  { title: "Operações", url: "/operacoes", icon: Activity, adminOnly: true },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Automações", url: "/automacoes", icon: Zap },
   { title: "Logs de Importação", url: "/logs-importacao", icon: FileText },

@@ -23,6 +23,9 @@ import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
+import KnowledgeValidationPage from "./pages/KnowledgeValidationPage";
+import KnowledgeGapsPage from "./pages/KnowledgeGapsPage";
+import OperationsPage from "./pages/OperationsPage";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +49,9 @@ const App = () => (
                     <Route path="/clientes" element={<ClientesPage />} />
                     <Route path="/monitoramento" element={<Monitoramento />} />
                     <Route path="/conhecimento" element={<BaseConhecimento />} />
+                    <Route path="/conhecimento/validacoes" element={<KnowledgeValidationPage />} />
+                    <Route path="/conhecimento/gaps" element={<KnowledgeGapsPage />} />
+                    <Route path="/operacoes" element={<OperationsPage />} />
                     <Route path="/relatorios" element={<RelatoriosPage />} />
                     <Route path="/automacoes" element={<AutomacoesPage />} />
                     <Route path="/configuracoes" element={<Configuracoes />} />
