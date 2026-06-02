@@ -20,6 +20,7 @@ import ReactMarkdown from "react-markdown";
 import ImportEmailsButton from "@/components/ImportEmailsButton";
 import EmailReplyPanel from "@/components/EmailReplyPanel";
 import AttachmentsList from "@/components/AttachmentsList";
+import ChamadoTimeTracker from "@/components/ChamadoTimeTracker";
 
 type ChamadoStatus = "Novo" | "Em análise" | "Execução" | "Validação" | "Finalizado";
 
@@ -521,6 +522,8 @@ function ChamadoDetail({ chamado, clientes, onDelete, onUpdated }: { chamado: an
                   )}
 
                   <AttachmentsList chamadoId={chamado.id} />
+
+                  <ChamadoTimeTracker chamadoId={chamado.id} />
 
                   {chamado.nivel_risco === "alto" && (
                     <div className="rounded-xl border border-critical/40 bg-critical/5 p-3 text-xs text-critical flex items-start gap-2">
