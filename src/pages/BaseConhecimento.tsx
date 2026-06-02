@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Search, Database, FileText, AlertCircle, Copy, Check, Star, Plus, Loader2 } from "lucide-react";
+import { BookOpen, Search, Database, FileText, AlertCircle, Copy, Check, Star, Plus, Loader2, Sparkles } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -76,6 +76,20 @@ export default function BaseConhecimentoPage() {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  };
+
+  const [indexingId, setIndexingId] = useState<string | null>(null);
+  const reindex = async (id: string) => {
+    setIndexingId(id);
+    const { data, error } = await supabase.functions.invoke("embed-conhecimento", {
+      body: { target: "conhecimento", id },
+    });
+    setIndexingId(null);
+    if (error || (data as any)?.error) {
+      toast({ title: "Falha ao indexar", description: error?.message || (data as any)?.error, variant: "destructive" });
+    } else {
+      toast({ title: "🔎 Indexado", description: `${(data as any)?.chunks ?? 0} chunks gerados` });
+    }
   };
 
   const copy = (text: string, id: string) => {
@@ -155,6 +169,11 @@ export default function BaseConhecimentoPage() {
                   <button onClick={() => toggleFavorite(item.id)} className="p-1 rounded hover:bg-secondary transition-colors">
                     <Star className={`h-3.5 w-3.5 ${isFav ? "fill-warning text-warning" : "text-muted-foreground/40"}`} />
                   </button>
+                  <button onClick={() => reindex(item.id)} disabled={indexingId === item.id}
+                    title="Re-indexar para busca semântica"
+                    className="p-1 rounded hover:bg-primary/10 text-primary/70 hover:text-primary transition-colors">
+                    {indexingId === item.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  </button>
                   <Badge variant="outline" className={`text-[8px] ${config.color}`}>{item.tipo}</Badge>
                   <Badge variant="outline" className={`text-[8px] ${categoriaColors[cat] || categoriaColors.Geral}`}>{cat}</Badge>
                 </div>
@@ -180,7 +199,11 @@ function CreateArticleForm({ onSuccess, onCancel }: { onSuccess: () => void; onC
   const handleSubmit = async () => {
     if (!form.titulo.trim() || !form.conteudo.trim()) return;
     setSaving(true);
-    await supabase.from("base_conhecimento").insert(form as any);
+    const { data: created } = await supabase.from("base_conhecimento").insert(form as any).select("id").maybeSingle();
+    if (created?.id) {
+      // dispara indexação assíncrona sem bloquear
+      supabase.functions.invoke("embed-conhecimento", { body: { target: "conhecimento", id: created.id } }).catch(() => {});
+    }
     setSaving(false);
     onSuccess();
   };
